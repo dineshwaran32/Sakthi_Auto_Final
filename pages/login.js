@@ -272,27 +272,9 @@ export default function LoginScreen() {
                   </Button>
                 )}
 
-                <View style={styles.demoInfo}>
-                  <Text variant="bodySmall" style={styles.demoTitle}>
-                    Demo Credentials:
-                  </Text>
-                  <Text variant="bodySmall" style={styles.demoText}>
-                    Employee: 12345 (Employee), 67890 (Reviewer), 11111 (Admin)
-                  </Text>
-                  <Text variant="bodySmall" style={styles.demoText}>
-                    OTP: 1234
-                  </Text>
-                </View>
+                {/* Demo Credentials section removed as per request */}
 
-                {/* Debug button for production builds */}
-                <Button
-                  mode="outlined"
-                  onPress={handleDebugNetwork}
-                  style={[styles.button, { marginTop: spacing.sm }]}
-                  disabled={loading}
-                >
-                  Test Network Connection
-                </Button>
+                {/* Test Network Connection button removed as per request */}
               </Card.Content>
             </Card>
           </View>

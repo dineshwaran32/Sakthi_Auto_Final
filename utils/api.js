@@ -18,27 +18,50 @@ const api = axios.create({
   },
 });
 
-// Check network connectivity before making requests
+// Enhanced network connectivity check
 const checkNetworkAndMakeRequest = async (config) => {
-  const netInfo = await NetInfo.getNetworkStateAsync();
-  
-  console.log('📡 Network Status:', {
-    isConnected: netInfo.isConnected,
-    isInternetReachable: netInfo.isInternetReachable,
-    type: netInfo.type,
-    isWifi: netInfo.type === NetInfo.NetworkStateType.WIFI,
-    isCellular: netInfo.type === NetInfo.NetworkStateType.CELLULAR
-  });
-  
-  if (!netInfo.isConnected) {
-    throw new Error('No internet connection. Please check your network settings.');
+  try {
+    const netInfo = await NetInfo.getNetworkStateAsync();
+    
+    console.log('📡 Network Status:', {
+      isConnected: netInfo.isConnected,
+      isInternetReachable: netInfo.isInternetReachable,
+      type: netInfo.type,
+      isWifi: netInfo.type === NetInfo.NetworkStateType.WIFI,
+      isCellular: netInfo.type === NetInfo.NetworkStateType.CELLULAR,
+      details: netInfo.details
+    });
+    
+    if (!netInfo.isConnected) {
+      throw new Error('No internet connection. Please check your network settings.');
+    }
+    
+    if (!netInfo.isInternetReachable) {
+      throw new Error('Internet is not reachable. Please try again.');
+    }
+    
+    // Test connectivity to the server with a simple ping
+    try {
+      console.log('🔗 Testing server connectivity...');
+      const testResponse = await fetch(`${config.baseURL}`, { 
+        method: 'HEAD',
+        timeout: 5000,
+        headers: {
+          'User-Agent': 'SakthiApp/1.0'
+        }
+      });
+      console.log('✅ Server connectivity test passed, status:', testResponse.status);
+    } catch (testError) {
+      console.warn('⚠️ Server connectivity test failed:', testError.message);
+      console.log('🔍 This might be due to network security policies in production builds');
+      // Don't throw here, let the actual request try
+    }
+    
+    return config;
+  } catch (error) {
+    console.error('❌ Network check failed:', error);
+    throw error;
   }
-  
-  if (!netInfo.isInternetReachable) {
-    throw new Error('Internet is not reachable. Please try again.');
-  }
-  
-  return config;
 };
 
 // Attach token to every request
@@ -49,7 +72,8 @@ api.interceptors.request.use(
         method: config.method?.toUpperCase(),
         url: config.url,
         baseURL: config.baseURL,
-        fullURL: `${config.baseURL}${config.url}`
+        fullURL: `${config.baseURL}${config.url}`,
+        headers: config.headers
       });
       
       // Check network connectivity first
@@ -106,6 +130,10 @@ api.interceptors.response.use(
     
     // Handle network errors
     if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED') {
+      console.error('🌐 Network error detected. This might be due to:');
+      console.error('1. Network security policies blocking HTTP traffic');
+      console.error('2. Server not reachable from production build');
+      console.error('3. Firewall or network restrictions');
       throw new Error('Network error. Please check your internet connection and try again.');
     }
     

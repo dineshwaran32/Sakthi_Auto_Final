@@ -54,12 +54,30 @@ export const IdeaProvider = ({ children }) => {
 
   const loadIdeas = useCallback(async () => {
     try {
+      console.log('🔄 Loading ideas...');
       dispatch({ type: 'SET_LOADING', payload: true });
+      
       const res = await api.get('/api/ideas');
-      dispatch({ type: 'SET_IDEAS', payload: res.data.data.ideas });
+      
+      // Handle different possible response structures
+      let ideasData = [];
+      if (res.data && res.data.data && res.data.data.ideas) {
+        ideasData = res.data.data.ideas;
+      } else if (res.data && res.data.ideas) {
+        ideasData = res.data.ideas;
+      } else if (Array.isArray(res.data)) {
+        ideasData = res.data;
+      } else {
+        console.warn('⚠️ Unexpected API response structure:', res.data);
+        ideasData = [];
+      }
+      
+      console.log(`✅ Loaded ${ideasData.length} ideas`);
+      dispatch({ type: 'SET_IDEAS', payload: ideasData });
+      
     } catch (error) {
-      console.error('Error loading ideas:', error);
-      // Don't throw error, just log it
+      console.error('❌ Error loading ideas:', error.message);
+      // Don't throw error, just log it and keep empty ideas array
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -71,25 +89,21 @@ export const IdeaProvider = ({ children }) => {
 
   const submitIdea = useCallback(async (ideaData) => {
     try {
-      console.log('Submitting idea:', ideaData);
+      console.log('🚀 Submitting idea...');
       const res = await api.post('/api/ideas', ideaData);
-      console.log('Idea submitted successfully:', res.data);
+      console.log('✅ Idea submitted successfully');
       
+      // Force reload ideas to get the latest data
       await loadIdeas();
-      console.log('Ideas reloaded');
       
       // Refresh user data to update credit points
       if (refreshUserCallback) {
-        console.log('Calling refreshUser callback...');
         await refreshUserCallback();
-        console.log('refreshUser callback completed');
-      } else {
-        console.log('No refreshUser callback available');
       }
       
       return res.data.data.idea;
     } catch (error) {
-      console.error('Error submitting idea:', error);
+      console.error('❌ Error submitting idea:', error.message);
       throw error;
     }
   }, [loadIdeas, refreshUserCallback]);
@@ -143,6 +157,11 @@ export const IdeaProvider = ({ children }) => {
     }
   }, [state.ideas, refreshUserCallback]);
 
+  // Manual refresh function for debugging
+  const refreshIdeas = useCallback(async () => {
+    await loadIdeas();
+  }, [loadIdeas]);
+
   return (
     <IdeaContext.Provider value={{
       ...state,
@@ -152,7 +171,8 @@ export const IdeaProvider = ({ children }) => {
       editIdea,
       deleteIdea,
       clearIdeas,
-      setRefreshUserCallback
+      setRefreshUserCallback,
+      refreshIdeas
     }}>
       {children}
     </IdeaContext.Provider>

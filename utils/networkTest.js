@@ -40,112 +40,106 @@ export const testServerConnectivity = async () => {
 };
 
 export const testNetworkConnectivity = async () => {
-  console.log('🧪 Starting Network Connectivity Test...');
-  
   try {
-    // Test 1: Basic network info
-    const netInfo = await NetInfo.getNetworkStateAsync();
-    console.log('📡 Network Info:', {
-      isConnected: netInfo.isConnected,
-      isInternetReachable: netInfo.isInternetReachable,
-      type: netInfo.type,
-      isWifi: netInfo.type === NetInfo.NetworkStateType.WIFI,
-      isCellular: netInfo.type === NetInfo.NetworkStateType.CELLULAR,
-      details: netInfo
-    });
-
-    if (!netInfo.isConnected) {
-      throw new Error('Device is not connected to any network');
-    }
-
-    if (!netInfo.isInternetReachable) {
-      throw new Error('Internet is not reachable');
-    }
-
-    // Test 2: Network configuration
-    const config = getNetworkConfig();
-    console.log('⚙️ Network Config:', config);
-
-    // Test 3: Server connectivity
-    const serverTest = await testServerConnectivity();
-    if (!serverTest.success) {
-      throw new Error(`Server connectivity failed: ${serverTest.message}`);
-    }
-
-    // Test 4: Simple API ping (skip if health endpoint doesn't exist)
-    console.log('🌐 Testing API connectivity...');
-    try {
-      const response = await api.get('/api/health', { timeout: 10000 });
-      console.log('✅ API Health Check Response:', response.data);
-    } catch (healthError) {
-      console.log('⚠️ Health endpoint not available, but server is reachable');
-    }
-
-    // Test 5: Test OTP endpoint (without sending actual OTP)
-    console.log('📱 Testing OTP endpoint...');
-    try {
-      const otpTestResponse = await api.post('/api/auth/send-otp', { 
-        employeeNumber: 'test123' 
-      }, { timeout: 15000 });
-      console.log('✅ OTP Endpoint Test Response:', otpTestResponse.data);
-    } catch (otpError) {
-      console.log('❌ OTP Endpoint Test Failed:', otpError.message);
-      throw new Error(`OTP endpoint not available: ${otpError.message}`);
-    }
-
-    return {
-      success: true,
-      message: 'All network tests passed',
-      networkInfo: netInfo,
-      config: config,
-      serverTest: serverTest
-    };
-
-  } catch (error) {
-    console.error('❌ Network Test Failed:', error);
+    console.log('🔍 Testing network connectivity...');
     
-    return {
-      success: false,
-      message: error.message,
-      error: error,
-      networkInfo: await NetInfo.getNetworkStateAsync(),
-      config: getNetworkConfig()
+    // Get network state
+    const netInfo = await NetInfo.getNetworkStateAsync();
+    console.log('📡 Network State:', netInfo);
+    
+    // Test basic internet connectivity
+    const isConnected = netInfo.isConnected && netInfo.isInternetReachable;
+    console.log('🌐 Internet Connected:', isConnected);
+    
+    // Test server connectivity with multiple methods
+    const serverUrl = 'http://118.91.235.74:80';
+    console.log('🔗 Testing server connectivity to:', serverUrl);
+    
+    // Method 1: Simple fetch
+    try {
+      console.log('📡 Method 1: Simple fetch test...');
+      const response = await fetch(serverUrl, {
+        method: 'HEAD',
+        timeout: 10000
+      });
+      console.log('✅ Method 1 - Server is reachable, status:', response.status);
+      return { success: true, message: 'Server is reachable', method: 'fetch' };
+    } catch (fetchError) {
+      console.error('❌ Method 1 - Fetch failed:', fetchError.message);
+      
+      // Method 2: XMLHttpRequest (fallback)
+      try {
+        console.log('📡 Method 2: XMLHttpRequest test...');
+        const xhrResult = await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.timeout = 10000;
+          xhr.onload = () => resolve({ status: xhr.status, statusText: xhr.statusText });
+          xhr.onerror = () => reject(new Error('XHR failed'));
+          xhr.ontimeout = () => reject(new Error('XHR timeout'));
+          xhr.open('HEAD', serverUrl);
+          xhr.send();
+        });
+        console.log('✅ Method 2 - XHR successful:', xhrResult);
+        return { success: true, message: 'Server is reachable via XHR', method: 'xhr' };
+      } catch (xhrError) {
+        console.error('❌ Method 2 - XHR failed:', xhrError.message);
+        
+        // Method 3: Ping test (if available)
+        try {
+          console.log('📡 Method 3: Ping test...');
+          const pingResponse = await fetch(`${serverUrl}/ping`, {
+            method: 'GET',
+            timeout: 5000
+          });
+          console.log('✅ Method 3 - Ping successful:', pingResponse.status);
+          return { success: true, message: 'Server ping successful', method: 'ping' };
+        } catch (pingError) {
+          console.error('❌ Method 3 - Ping failed:', pingError.message);
+          
+          return { 
+            success: false, 
+            message: 'All connectivity methods failed',
+            error: `Fetch: ${fetchError.message}, XHR: ${xhrError.message}, Ping: ${pingError.message}`,
+            suggestions: [
+              'Check if server is running on 118.91.235.74:80',
+              'Verify network security configuration in app',
+              'Check firewall settings',
+              'Try using HTTPS instead of HTTP'
+            ]
+          };
+        }
+      }
+    }
+  } catch (error) {
+    console.error('❌ Network test failed:', error);
+    return { 
+      success: false, 
+      message: 'Network test failed',
+      error: error.message 
     };
   }
 };
 
-export const testSpecificEndpoint = async (endpoint, method = 'GET', data = null) => {
-  console.log(`🧪 Testing specific endpoint: ${method} ${endpoint}`);
-  
+export const testSpecificEndpoint = async (endpoint) => {
   try {
-    const config = {
-      method: method.toLowerCase(),
-      url: endpoint,
-      timeout: 15000
-    };
-
-    if (data) {
-      config.data = data;
-    }
-
-    const response = await api.request(config);
-    console.log(`✅ ${endpoint} Test Success:`, response.data);
+    const baseUrl = 'http://118.91.235.74:80';
+    const fullUrl = `${baseUrl}${endpoint}`;
     
-    return {
-      success: true,
-      data: response.data,
-      status: response.status
-    };
-
+    console.log(`🔗 Testing endpoint: ${fullUrl}`);
+    
+    const response = await fetch(fullUrl, {
+      method: 'GET',
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'SakthiApp/1.0'
+      }
+    });
+    
+    console.log(`✅ Endpoint test successful: ${response.status}`);
+    return { success: true, status: response.status, data: await response.text() };
   } catch (error) {
-    console.error(`❌ ${endpoint} Test Failed:`, error);
-    
-    return {
-      success: false,
-      error: error.message,
-      status: error.response?.status,
-      data: error.response?.data
-    };
+    console.error(`❌ Endpoint test failed: ${error.message}`);
+    return { success: false, error: error.message };
   }
 };
 
@@ -228,9 +222,27 @@ export const testAllEndpoints = async () => {
   };
 };
 
+export const getNetworkInfo = async () => {
+  try {
+    const netInfo = await NetInfo.getNetworkStateAsync();
+    return {
+      isConnected: netInfo.isConnected,
+      isInternetReachable: netInfo.isInternetReachable,
+      type: netInfo.type,
+      details: netInfo.details,
+      isWifi: netInfo.type === NetInfo.NetworkStateType.WIFI,
+      isCellular: netInfo.type === NetInfo.NetworkStateType.CELLULAR
+    };
+  } catch (error) {
+    console.error('Error getting network info:', error);
+    return null;
+  }
+};
+
 export default {
   testNetworkConnectivity,
   testSpecificEndpoint,
   getNetworkDiagnostics,
-  testAllEndpoints
+  testAllEndpoints,
+  getNetworkInfo
 }; 

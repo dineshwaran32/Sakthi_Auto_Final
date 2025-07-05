@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -10,7 +10,13 @@ import { LogBox } from 'react-native';
 
 // Import contexts
 import { UserProvider, useUser } from './context/UserContext';
-import { IdeaProvider } from './context/IdeaContext';
+import { IdeaProvider, useIdeas } from './context/IdeaContext';
+
+// Import hooks
+import { useIdeaLoader } from './hooks/UserIdeaLoader';
+
+// Import components
+import CustomSplashScreen from './components/SplashScreen';
 
 // Import screens
 import LoginScreen from './pages/login';
@@ -41,6 +47,18 @@ const theme = {
     ...(customTheme?.colors || {}),
   },
 };
+
+// Connect User and Idea contexts
+function ContextConnector() {
+  const { refreshUser } = useUser();
+  const { setRefreshUserCallback } = useIdeas();
+
+  React.useEffect(() => {
+    setRefreshUserCallback(refreshUser);
+  }, [refreshUser, setRefreshUserCallback]);
+
+  return null;
+}
 
 // Bottom Tab Navigator Component
 function TabNavigator() {
@@ -138,20 +156,27 @@ function TabNavigator() {
 // Main App Content with Authentication Logic
 function AppContent() {
   const { isAuthenticated, loading } = useUser();
+  const [splashFinished, setSplashFinished] = useState(false);
+  
+  // Initialize idea loading when user is authenticated
+  useIdeaLoader();
 
-  if (loading) {
-    // Show loading screen while checking authentication
-    return null;
+  // Show splash screen while loading or until splash is finished
+  if (loading || !splashFinished) {
+    return <CustomSplashScreen onFinish={() => setSplashFinished(true)} />;
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {!isAuthenticated ? (
-        <Stack.Screen name="Login" component={LoginScreen} />
-      ) : (
-        <Stack.Screen name="MainApp" component={TabNavigator} />
-      )}
-    </Stack.Navigator>
+    <>
+      <ContextConnector />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {!isAuthenticated ? (
+          <Stack.Screen name="Login" component={LoginScreen} />
+        ) : (
+          <Stack.Screen name="MainApp" component={TabNavigator} />
+        )}
+      </Stack.Navigator>
+    </>
   );
 }
 

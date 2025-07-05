@@ -273,7 +273,7 @@ export default function TrackerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.surface,
   },
   header: {
     padding: spacing.lg,
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     marginBottom: spacing.md,
     fontWeight: 'bold',
-    color: '#fff',
+    color: theme.colors.onSurface,
   },
   emptyText: {
     textAlign: 'center',
