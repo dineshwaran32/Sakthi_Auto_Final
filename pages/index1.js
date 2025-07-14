@@ -26,6 +26,7 @@ import { useUser } from '../context/UserContext';
 import { useIdeas } from '../context/IdeaContext';
 import { theme, spacing } from '../utils/theme';
 import api from '../utils/api';
+import IdeaDetailModal from '../components/IdeaDetailModal';
 
 const { width, height: windowHeight } = Dimensions.get('window');
 
@@ -41,6 +42,8 @@ export default function HomeScreen() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [selectedIdea, setSelectedIdea] = useState(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
 
   const fetchNotifications = async () => {
     setLoadingNotifications(true);
@@ -263,7 +266,14 @@ export default function HomeScreen() {
           </Text>
           
           {userIdeas.slice(0, 3).map((idea) => (
-            <Card key={idea._id || idea.id} style={styles.activityCard}>
+            <Card 
+              key={idea._id || idea.id} 
+              style={styles.activityCard}
+              onPress={() => {
+                setSelectedIdea(idea);
+                setDetailModalVisible(true);
+              }}
+            >
               <Card.Content style={styles.activityContent}>
                 <View style={styles.activityInfo}>
                   <Text variant="titleMedium" style={styles.activityTitle}>
@@ -341,6 +351,15 @@ export default function HomeScreen() {
             ))}
           </View>
         </View>
+        
+        <IdeaDetailModal
+          visible={detailModalVisible}
+          idea={selectedIdea}
+          onDismiss={() => {
+            setDetailModalVisible(false);
+            setSelectedIdea(null);
+          }}
+        />
       </ScrollView>
     </SafeAreaView>
   );

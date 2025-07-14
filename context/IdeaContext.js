@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useReducer, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react';
 import api from '../utils/api';
+import io from 'socket.io-client';
+import { getNetworkConfig } from '../utils/networkConfig';
 
 const IdeaContext = createContext();
 
@@ -51,6 +53,60 @@ export const IdeaProvider = ({ children }) => {
   const setRefreshUserCallback = useCallback((callback) => {
     refreshUserCallback = callback;
   }, []);
+
+  // --- WebSocket (socket.io) logic for real-time updates ---
+  const socketRef = useRef(null);
+  const isAuthenticatedRef = useRef(false); // To track auth state
+
+  // Helper to connect socket
+  const connectSocket = () => {
+    if (socketRef.current) return;
+    const { baseURL } = getNetworkConfig();
+    // Convert http://host:port to ws://host:port
+    const wsURL = baseURL.replace(/^http/, 'ws');
+    socketRef.current = io(wsURL, {
+      transports: ['websocket'],
+      autoConnect: true,
+      reconnection: true,
+    });
+
+    // Listen for idea update events
+    socketRef.current.on('ideas_updated', () => {
+      console.log('🔔 Real-time: ideas_updated event received');
+      loadIdeas();
+    });
+    // You can add more events if needed (e.g., 'idea_added', 'idea_deleted')
+  };
+
+  // Helper to disconnect socket
+  const disconnectSocket = () => {
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+  };
+
+  // Effect: manage socket connection based on authentication
+  useEffect(() => {
+    // Try to detect if user is authenticated by checking token in AsyncStorage
+    // (Or you can pass isAuthenticated as prop/context if available)
+    let isMounted = true;
+    import('@react-native-async-storage/async-storage').then(AsyncStorage => {
+      AsyncStorage.default.getItem('token').then(token => {
+        if (isMounted && token) {
+          isAuthenticatedRef.current = true;
+          connectSocket();
+        } else {
+          isAuthenticatedRef.current = false;
+          disconnectSocket();
+        }
+      });
+    });
+    return () => {
+      isMounted = false;
+      disconnectSocket();
+    };
+  }, []); // Only run on mount/unmount
 
   const loadIdeas = useCallback(async () => {
     try {

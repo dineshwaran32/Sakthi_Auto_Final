@@ -27,6 +27,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useUser } from '../context/UserContext';
 import { useIdeas } from '../context/IdeaContext';
 import { theme, spacing } from '../utils/theme';
+import IdeaDetailModal from '../components/IdeaDetailModal';
 
 const AnimatedListItem = ({ children, index }) => {
   const slideUp = useRef(new Animated.Value(50)).current;
@@ -71,6 +72,8 @@ export default function TrackerScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [menuVisible, setMenuVisible] = useState(false);
+  const [selectedIdea, setSelectedIdea] = useState(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
 
   const userIdeas = ideas.filter(idea => idea.submittedBy?.employeeNumber === user?.employeeNumber);
   
@@ -117,9 +120,17 @@ export default function TrackerScreen() {
     });
   };
 
+  const handleIdeaPress = (idea) => {
+    setSelectedIdea(idea);
+    setDetailModalVisible(true);
+  };
+
   const renderIdeaCard = ({ item, index }) => (
     <AnimatedListItem index={index}>
-      <Card style={styles.ideaCard}>
+      <Card 
+        style={styles.ideaCard}
+        onPress={() => handleIdeaPress(item)}
+      >
         <Card.Content>
           <View style={styles.cardHeader}>
             <Text variant="titleMedium" style={styles.ideaTitle}>
@@ -182,6 +193,17 @@ export default function TrackerScreen() {
               </Text>
             </View>
           )}
+          
+          <View style={styles.viewDetailsContainer}>
+            <Text variant="bodySmall" style={styles.viewDetailsText}>
+              Tap to view full details
+            </Text>
+            <MaterialIcons 
+              name="chevron-right" 
+              size={16} 
+              color={theme.colors.primary} 
+            />
+          </View>
         </Card.Content>
       </Card>
     </AnimatedListItem>
@@ -264,6 +286,15 @@ export default function TrackerScreen() {
           ]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={renderEmptyState}
+        />
+        
+        <IdeaDetailModal
+          visible={detailModalVisible}
+          idea={selectedIdea}
+          onDismiss={() => {
+            setDetailModalVisible(false);
+            setSelectedIdea(null);
+          }}
         />
       </SafeAreaView>
     </PaperProvider>
@@ -357,6 +388,19 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
     color: theme.colors.tertiary,
     fontWeight: 'bold',
+  },
+  viewDetailsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.outline,
+  },
+  viewDetailsText: {
+    color: theme.colors.primary,
+    fontStyle: 'italic',
   },
   emptyState: {
     alignItems: 'center',

@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useIdeas } from '../context/IdeaContext';
 import { theme, spacing } from '../utils/theme';
+import IdeaDetailModal from '../components/IdeaDetailModal';
 
 const AnimatedListItem = ({ children, index }) => {
   const slideUp = useRef(new Animated.Value(50)).current;
@@ -64,6 +65,8 @@ export default function ImplementedScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [menuVisible, setMenuVisible] = useState(false);
+  const [selectedIdea, setSelectedIdea] = useState(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
 
   // Filter for implemented and implementing ideas
   const implementedIdeas = ideas.filter(idea => 
@@ -115,9 +118,17 @@ export default function ImplementedScreen() {
   const getUserName = (submittedBy) => submittedBy?.name || 'Unknown User';
   const getUserDept = (submittedBy) => submittedBy?.department || '';
 
+  const handleIdeaPress = (idea) => {
+    setSelectedIdea(idea);
+    setDetailModalVisible(true);
+  };
+
   const renderIdeaCard = ({ item, index }) => (
     <AnimatedListItem index={index}>
-      <Card style={styles.ideaCard}>
+      <Card 
+        style={styles.ideaCard}
+        onPress={() => handleIdeaPress(item)}
+      >
         <Card.Content>
           <View style={styles.cardHeader}>
             <View style={styles.titleContainer}>
@@ -206,6 +217,17 @@ export default function ImplementedScreen() {
               </Text>
             </View>
           )}
+          
+          <View style={styles.viewDetailsContainer}>
+            <Text variant="bodySmall" style={styles.viewDetailsText}>
+              Tap to view full details
+            </Text>
+            <MaterialIcons 
+              name="chevron-right" 
+              size={16} 
+              color={theme.colors.primary} 
+            />
+          </View>
         </Card.Content>
       </Card>
     </AnimatedListItem>
@@ -275,20 +297,29 @@ export default function ImplementedScreen() {
         </Menu>
       </View>
 
-      <FlatList
-        data={filteredIdeas}
-        renderItem={renderIdeaCard}
-        keyExtractor={(item) => item._id || item.id}
-        contentContainerStyle={[
-          styles.list,
-          filteredIdeas.length === 0 && styles.emptyList,
-          { paddingBottom: 100 }
-        ]}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={renderEmptyState}
-      />
-    </SafeAreaView>
-  );
+              <FlatList
+          data={filteredIdeas}
+          renderItem={renderIdeaCard}
+          keyExtractor={(item) => item._id || item.id}
+          contentContainerStyle={[
+            styles.list,
+            filteredIdeas.length === 0 && styles.emptyList,
+            { paddingBottom: 100 }
+          ]}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={renderEmptyState}
+        />
+        
+        <IdeaDetailModal
+          visible={detailModalVisible}
+          idea={selectedIdea}
+          onDismiss={() => {
+            setDetailModalVisible(false);
+            setSelectedIdea(null);
+          }}
+        />
+      </SafeAreaView>
+    );
 }
 
 const styles = StyleSheet.create({
@@ -409,6 +440,19 @@ const styles = StyleSheet.create({
     color: theme.colors.success,
     fontWeight: 'bold',
     flex: 1,
+  },
+  viewDetailsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.outline,
+  },
+  viewDetailsText: {
+    color: theme.colors.primary,
+    fontStyle: 'italic',
   },
   emptyState: {
     alignItems: 'center',
