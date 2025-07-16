@@ -28,6 +28,8 @@ import { useUser } from '../context/UserContext';
 import { useIdeas } from '../context/IdeaContext';
 import { theme, spacing } from '../utils/theme';
 import IdeaDetailModal from '../components/IdeaDetailModal';
+import { useRefreshOnFocus } from '../hooks/useRefreshOnFocus';
+import { useFocusEffect } from '@react-navigation/native';
 
 const AnimatedListItem = ({ children, index }) => {
   const slideUp = useRef(new Animated.Value(50)).current;
@@ -66,14 +68,26 @@ const STATUS_FILTERS = [
   { value: 'implementing', label: 'Implementing' },
 ];
 
-export default function TrackerScreen() {
+export default function TrackerScreen({ route }) {
   const { user } = useUser();
   const { ideas, loadIdeas } = useIdeas();
+  
+  // Initialize state with default values
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedIdea, setSelectedIdea] = useState(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
+
+  // Handle initial filter from navigation params
+  useEffect(() => {
+    if (route.params?.initialFilter) {
+      setStatusFilter(route.params.initialFilter);
+    }
+  }, [route.params?.initialFilter]);
+
+  // Refresh data when screen comes into focus
+  useRefreshOnFocus(loadIdeas);
 
   const userIdeas = ideas.filter(idea => idea.submittedBy?.employeeNumber === user?.employeeNumber);
   

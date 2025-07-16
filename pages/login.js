@@ -23,6 +23,8 @@ import { spacing } from '../utils/theme';
 import api from '../utils/api';
 import { testNetworkConnectivity, testAllEndpoints } from '../utils/networkTest';
 import logo from '../assets/icon.png';
+import * as ImagePicker from 'expo-image-picker';
+import { uploadImageAsync } from '../utils/api';
 
 export default function LoginScreen() {
   const [employeeNumber, setEmployeeNumber] = useState('');

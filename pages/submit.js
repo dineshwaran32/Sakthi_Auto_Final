@@ -23,10 +23,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser } from '../context/UserContext';
 import { useIdeas } from '../context/IdeaContext';
 import { theme, spacing } from '../utils/theme';
+import { getNetworkConfig } from '../utils/networkConfig';
+// import { uploadImageAsync } from '../utils/api';
 
 const { width } = Dimensions.get('window');
 
@@ -46,9 +50,10 @@ const BENEFIT_OPTIONS = [
 ];
 
 export default function SubmitIdeaScreen() {
+  
   const navigation = useNavigation();
   const { user } = useUser();
-  const { submitIdea } = useIdeas();
+  const { submitIdea, loadIdeas } = useIdeas();
   
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -210,10 +215,22 @@ export default function SubmitIdeaScreen() {
                   allowsEditing: true,
                   aspect: [4, 3],
                   quality: 0.8,
+                  base64: false,
+                  exif: false
                 });
 
                 if (!result.canceled && result.assets && result.assets.length > 0) {
-                  updateFormData('images', [...formData.images, result.assets[0].uri]);
+                  try {
+                    const newImages = [...formData.images, {
+                      uri: result.assets[0].uri,
+                      type: result.assets[0].type || 'image/jpeg',
+                      name: `image_${Date.now()}.jpg`
+                    }];
+                    updateFormData('images', newImages);
+                  } catch (e) {
+                    console.error('Image processing error:', e);
+                    Alert.alert('Error', 'Failed to process image. Please try again.');
+                  }
                 }
               } else {
                 Alert.alert('Permission Denied', 'Camera permission is required to take photos.');
@@ -230,10 +247,22 @@ export default function SubmitIdeaScreen() {
                   aspect: [4, 3],
                   quality: 0.8,
                   allowsMultipleSelection: false,
+                  base64: false,
+                  exif: false
                 });
 
                 if (!result.canceled && result.assets && result.assets.length > 0) {
-                  updateFormData('images', [...formData.images, result.assets[0].uri]);
+                  try {
+                    const newImages = [...formData.images, {
+                      uri: result.assets[0].uri,
+                      type: result.assets[0].type || 'image/jpeg',
+                      name: `image_${Date.now()}.jpg`
+                    }];
+                    updateFormData('images', newImages);
+                  } catch (e) {
+                    console.error('Image processing error:', e);
+                    Alert.alert('Error', 'Failed to process image. Please try again.');
+                  }
                 }
               } else {
                 Alert.alert('Permission Denied', 'Media library permission is required to select photos.');
@@ -257,56 +286,169 @@ export default function SubmitIdeaScreen() {
     updateFormData('images', newImages);
   };
 
+  // Helper function to make API request with retries
+  const makeApiRequest = async (url, form, token, retries = 2) => {
+    let lastError;
+    
+    for (let i = 0; i <= retries; i++) {
+      try {
+        console.log(`Attempt ${i + 1} to ${url}`);
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            // Let fetch set the multipart Content-Type with boundary automatically
+            'X-Debug-Request': 'true'
+          },
+          body: form,
+        });
+
+        console.log('Response status:', response.status);
+        
+        if (response.ok) {
+          return response;
+        }
+        
+        // Handle non-OK responses
+        let errorData;
+        try {
+          errorData = await response.json();
+          console.error('Server error response:', errorData);
+        } catch (e) {
+          console.error('Failed to parse error response:', e);
+          const text = await response.text();
+          errorData = { message: text };
+        }
+        
+        lastError = new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        
+      } catch (error) {
+        console.error(`Request failed:`, error);
+        lastError = error;
+        
+        // If this was the last retry, rethrow the error
+        if (i === retries) {
+          throw lastError;
+        }
+        
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+      }
+    }
+    
+    throw lastError || new Error('Request failed after retries');
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
+    console.log('Starting form submission...');
+    
     try {
-      // Build the payload with only required fields
-      const payload = {
-        title: formData.title,
-        problem: formData.problem,
-        improvement: formData.improvement,
-        benefit: formData.benefit,
-        department: formData.department,
-      };
-      // Add optional fields if present
+      // 1. Build FormData
+      const form = new FormData();
+      console.log('FormData created');
+      
+      // Add text fields
+      form.append('title', formData.title);
+      form.append('problem', formData.problem);
+      form.append('improvement', formData.improvement);
+      form.append('benefit', formData.benefit);
+      form.append('department', formData.department);
+      
+      // Add estimated savings if provided
       if (formData.estimatedSavings && formData.estimatedSavings.trim() !== '') {
         const savings = Number(formData.estimatedSavings);
         if (!isNaN(savings) && savings >= 0) {
-          payload.estimatedSavings = savings;
+          form.append('estimatedSavings', savings);
         }
       }
-      if (formData.tags) payload.tags = formData.tags;
-      // Add image URIs (for future backend implementation)
-      if (formData.images && formData.images.length > 0) {
-        payload.imageUris = formData.images;
+      
+      // Simple image handling without compression
+      console.log('Adding images to form:', formData.images.length);
+      
+      for (const img of formData.images) {
+        const file = {
+          uri: img.uri,
+          name: `image_${Date.now()}.jpg`,
+          type: 'image/jpeg'
+        };
+        console.log('Adding image file:', file);
+        form.append('images', file);
       }
-
-      console.log('Submitting idea with payload:', payload);
-
-      await submitIdea(payload);
       
-      // Reset form immediately after successful submission
-      resetForm();
-      
-      Alert.alert(
-        'Success!', 
-        'Your idea has been submitted successfully and is now under review.',
-        [
-          { 
-            text: 'Submit Another Idea', 
-            onPress: () => {
-              // Form is already reset, just ensure we're on step 1
-              setCurrentStep(0);
-            }
-          },
-          { 
-            text: 'View My Ideas', 
-            onPress: () => navigation.navigate('My Ideas') 
+      // Get token for auth
+      let token = null;
+      try {
+        // Try to get token from AsyncStorage
+        const storedToken = await AsyncStorage.getItem('token');
+        console.log('Stored token:', storedToken ? 'Token found' : 'No token found');
+        
+        if (!storedToken) {
+          // If no token in AsyncStorage, check if we have a user context with token
+          if (user?.token) {
+            console.log('Using token from user context');
+            token = user.token;
+          } else {
+            throw new Error('No authentication token found. Please log in again.');
           }
-        ]
-      );
+        } else {
+          token = storedToken;
+        }
+      } catch (error) {
+        console.error('Error getting token:', error);
+        Alert.alert('Authentication Error', error.message || 'Please log in again.');
+        navigation.navigate('Login');
+        throw error;
+      }
+      
+      // 2. Prepare request with retry logic
+      const { baseURL, baseURLs = [baseURL] } = getNetworkConfig();
+      let lastError = null;
+      
+      // Try each base URL until one works or all fail
+      for (const url of baseURLs) {
+        const apiUrl = `${url}/api/ideas`;
+        console.log('Trying API URL:', apiUrl);
+        try {
+          // 3. Make the request with retries
+          const response = await makeApiRequest(apiUrl, form, token);
+          const result = await response.json();
+          console.log('Idea submitted successfully:', result);
+
+          // Refresh the ideas list
+          await loadIdeas();
+          
+          // Success feedback & reset UI
+          Alert.alert(
+            'Success!', 
+            'Your idea has been submitted successfully!',
+            [
+              {
+                text: 'Submit Another Idea',
+                onPress: () => resetForm()
+              },
+              {
+                text: 'View My Ideas',
+                onPress: () => {
+                  resetForm();
+                  navigation.navigate('My Ideas');
+                }
+              }
+            ]
+          );
+          return; // stop after first success
+        } catch (error) {
+          console.error(`Request to ${apiUrl} failed:`, error);
+          lastError = error; // keep last error and try next url
+        }
+      }
+        
+      
+      // If we get here, all URLs failed
+      console.error('All API endpoints failed');
+      throw lastError || new Error('Failed to connect to the server. Please check your internet connection and try again.');
     } catch (error) {
-      // Only log to console, do not show any error UI except Alert
       console.error('Submit error:', error);
       Alert.alert('Error', 'Failed to submit idea. Please check your input and try again.');
     } finally {
@@ -433,10 +575,10 @@ export default function SubmitIdeaScreen() {
 
             {formData.images.length > 0 && (
               <View style={styles.imageContainer}>
-                {formData.images.map((uri, index) => (
+                {formData.images.map((image, index) => (
                   <Surface key={index} style={styles.imageItem}>
                     <Image 
-                      source={{ uri }} 
+                      source={{ uri: image.uri }} 
                       style={styles.imagePreview}
                       resizeMode="cover"
                     />

@@ -236,7 +236,10 @@ export default function HomeScreen() {
 
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
-          <Card style={[styles.statCard, { backgroundColor: theme.colors.onPrimary }]}>
+          <Card 
+            style={[styles.statCard, { backgroundColor: theme.colors.onPrimary }]}
+            onPress={() => navigation.navigate('My Ideas', { initialFilter: 'approved' })}
+          >
             <Card.Content style={styles.statContent}>
               <Text variant="headlineMedium" style={styles.statNumber}>
                 {approvedIdeas.length}
@@ -247,7 +250,10 @@ export default function HomeScreen() {
             </Card.Content>
           </Card>
 
-          <Card style={[styles.statCard, { backgroundColor: theme.colors.secondaryContainer }]}>
+          <Card 
+            style={[styles.statCard, { backgroundColor: theme.colors.secondaryContainer }]}
+            onPress={() => navigation.navigate('My Ideas', { initialFilter: 'under_review' })}
+          >
             <Card.Content style={styles.statContent}>
               <Text variant="headlineMedium" style={styles.statNumber}>
                 {pendingIdeas.length}

@@ -21,6 +21,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useIdeas } from '../context/IdeaContext';
 import { theme, spacing } from '../utils/theme';
 import IdeaDetailModal from '../components/IdeaDetailModal';
+import { useRefreshOnFocus } from '../hooks/useRefreshOnFocus';
 
 const AnimatedListItem = ({ children, index }) => {
   const slideUp = useRef(new Animated.Value(50)).current;
@@ -61,7 +62,10 @@ const DEPARTMENT_FILTERS = [
 ];
 
 export default function ImplementedScreen() {
-  const { ideas } = useIdeas();
+  const { ideas, loadIdeas } = useIdeas();
+  
+  // Refresh data when screen comes into focus
+  useRefreshOnFocus(loadIdeas);
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [menuVisible, setMenuVisible] = useState(false);

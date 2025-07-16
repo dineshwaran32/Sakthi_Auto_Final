@@ -4,26 +4,24 @@ import { Platform } from 'react-native';
 export const NETWORK_CONFIG = {
   // Development environment
   development: {
-    baseURL: 'http://118.91.235.74:80',
-    timeout: 30000,
-    retryAttempts: 3,
-    retryDelay: 1000,
+    // Try these fallback URLs in order
+    baseURLs: [
+      'http://10.35.187.142:3000',  // Your computer's local IP
+      'http://10.35.187.142:3000',  // Duplicated for retry reliability
+      'http://10.0.2.2:3000',       // Android Emulator localhost
+    ],
+    timeout: 30000,  // 30 seconds timeout
+    retryAttempts: 3,  // Increased retry attempts
+    retryDelay: 1000,  // 1 second between retries
+    debug: true,  // Enable debug logging
   },
   
   // Production environment
   production: {
-    baseURL: 'http://118.91.235.74:80',
+    baseURLs: ['https://your-production-api.com'],
     timeout: 30000,
     retryAttempts: 3,
     retryDelay: 2000,
-  },
-  
-  // Staging environment (if needed)
-  staging: {
-    baseURL: 'http://118.91.235.74:80',
-    timeout: 30000,
-    retryAttempts: 3,
-    retryDelay: 1500,
   }
 };
 
@@ -39,7 +37,24 @@ export const getCurrentEnvironment = () => {
 // Get network configuration for current environment
 export const getNetworkConfig = () => {
   const env = getCurrentEnvironment();
-  return NETWORK_CONFIG[env] || NETWORK_CONFIG.production;
+  const config = NETWORK_CONFIG[env] || NETWORK_CONFIG.production;
+  
+  // For development, try multiple base URLs
+  if (env === 'development') {
+    return {
+      ...config,
+      // Use the first working URL or fall back to the first one
+      baseURL: config.baseURLs[0],
+      // Keep all URLs for retry logic if needed
+      baseURLs: config.baseURLs
+    };
+  }
+  
+  // For production/staging, use the first URL
+  return {
+    ...config,
+    baseURL: config.baseURLs[0]
+  };
 };
 
 // Platform-specific network settings

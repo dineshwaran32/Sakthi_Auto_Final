@@ -5,6 +5,7 @@ import {
   ScrollView,
   Modal,
   Image,
+  TouchableOpacity, // Add this import
 } from 'react-native';
 import {
   Text,
@@ -17,9 +18,12 @@ import {
 } from 'react-native-paper';
 import { MaterialIcons } from '@expo/vector-icons';
 import { theme, spacing } from '../utils/theme';
+import { getNetworkConfig } from '../utils/networkConfig';
 
 const IdeaDetailModal = ({ visible, idea, onDismiss }) => {
   if (!idea) return null;
+
+  const [fullScreenImage, setFullScreenImage] = React.useState(null); // Add state
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -177,21 +181,27 @@ const IdeaDetailModal = ({ visible, idea, onDismiss }) => {
                 </View>
 
                 {/* Images */}
-                {(idea.imageUris && idea.imageUris.length > 0) && (
+                {(idea.images && idea.images.length > 0) && (
                   <View style={styles.section}>
                     <Text variant="titleMedium" style={styles.sectionTitle}>
                       Images
                     </Text>
                     <ScrollView horizontal style={{ marginVertical: 8 }} showsHorizontalScrollIndicator={false}>
-                      {idea.imageUris.map((uri, idx) => (
-                        <View key={idx} style={{ marginRight: 12 }}>
-                          <Image
-                            source={{ uri }}
-                            style={{ width: 120, height: 120, borderRadius: 8, backgroundColor: '#eee' }}
-                            resizeMode="cover"
-                          />
-                        </View>
-                      ))}
+                      {idea.images.map((img, idx) => {
+                        const { baseURL } = getNetworkConfig();
+                        const imgUri = img.filename ? `${baseURL}/uploads/${img.filename}` : (img.url || img.uri || '');
+                        return (
+                          <TouchableOpacity key={idx} onPress={() => setFullScreenImage(imgUri)}>
+                            <View style={{ marginRight: 12 }}>
+                              <Image
+                                source={{ uri: imgUri }}
+                                style={{ width: 120, height: 120, borderRadius: 8, backgroundColor: '#eee' }}
+                                resizeMode="cover"
+                              />
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
                     </ScrollView>
                   </View>
                 )}
@@ -252,9 +262,9 @@ const IdeaDetailModal = ({ visible, idea, onDismiss }) => {
                     </Text>
                     <View style={styles.tagsContainer}>
                       {idea.tags.map((tag, index) => (
-                        <Chip 
+                        <Chip
                           key={index}
-                          mode="outlined" 
+                          mode="outlined"
                           style={styles.tagChip}
                         >
                           {tag}
@@ -266,6 +276,32 @@ const IdeaDetailModal = ({ visible, idea, onDismiss }) => {
               </Card.Content>
             </Card>
           </ScrollView>
+        </View>
+      </Modal>
+      {/* Full Screen Image Modal */}
+      <Modal
+        visible={!!fullScreenImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setFullScreenImage(null)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.95)',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <Image
+            source={{ uri: fullScreenImage }}
+            style={{ width: '90%', height: '70%', resizeMode: 'contain' }}
+          />
+          <Button
+            mode="contained"
+            onPress={() => setFullScreenImage(null)}
+            style={{ marginTop: 20 }}
+          >
+            Close
+          </Button>
         </View>
       </Modal>
     </Portal>
@@ -395,10 +431,11 @@ const styles = StyleSheet.create({
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    // gap: spacing.sm, // Removed unsupported property
   },
   tagChip: {
     marginBottom: spacing.xs,
+    marginRight: spacing.sm, // Added for horizontal spacing
   },
 });
 

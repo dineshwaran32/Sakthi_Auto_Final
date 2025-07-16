@@ -178,4 +178,34 @@ api.interceptors.response.use(
   }
 );
 
+// Upload image to server and return the image URL
+export async function uploadImageAsync(uri) {
+  let uriParts = uri.split('.');
+  let fileType = uriParts[uriParts.length - 1];
+
+  let formData = new FormData();
+  formData.append('photo', {
+    uri,
+    name: `photo.${fileType}`,
+    type: `image/${fileType}`,
+  });
+
+  // Use your backend's upload endpoint (should be /upload)
+  const response = await fetch(`${networkConfig.baseURL}/upload`, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error('Image upload failed:', response.status, text);
+    throw new Error('Image upload failed');
+  }
+  const data = await response.json();
+  return data.imageUrl; // The server should return { imageUrl: "https://..." }
+}
+
 export default api; 

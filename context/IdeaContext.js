@@ -110,30 +110,106 @@ export const IdeaProvider = ({ children }) => {
 
   const loadIdeas = useCallback(async () => {
     try {
-      console.log('🔄 Loading ideas...');
+      console.log('🔄 [DEBUG] Starting to load ideas...');
       dispatch({ type: 'SET_LOADING', payload: true });
-      
-      const res = await api.get('/api/ideas');
-      
-      // Handle different possible response structures
-      let ideasData = [];
-      if (res.data && res.data.data && res.data.data.ideas) {
-        ideasData = res.data.data.ideas;
-      } else if (res.data && res.data.ideas) {
-        ideasData = res.data.ideas;
-      } else if (Array.isArray(res.data)) {
-        ideasData = res.data;
-      } else {
-        console.warn('⚠️ Unexpected API response structure:', res.data);
-        ideasData = [];
+
+      // Get network configuration with all available base URLs
+      const { baseURLs = [], timeout = 30000 } = getNetworkConfig();
+      console.log('🔍 [DEBUG] Available base URLs:', baseURLs);
+
+      // Get token from AsyncStorage
+      let token = null;
+      try {
+        const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+        token = await AsyncStorage.getItem('token');
+        if (!token) {
+          console.error('❌ [DEBUG] No token found in AsyncStorage');
+        } else {
+          console.log('🔑 [DEBUG] Token retrieved from AsyncStorage:', token.slice(0, 10) + '...');
+        }
+      } catch (tokenErr) {
+        console.error('❌ [DEBUG] Error retrieving token:', tokenErr);
       }
-      
-      console.log(`✅ Loaded ${ideasData.length} ideas`);
+
+      let lastError = null;
+      let ideasData = [];
+
+      // Try each base URL until one works
+      for (const baseURL of baseURLs) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+        try {
+          const url = `${baseURL}/api/ideas`;
+          console.log(`🌐 [DEBUG] Trying to fetch ideas from: ${url}`);
+
+          const response = await fetch(url, {
+            method: 'GET',
+            signal: controller.signal,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            }
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+          }
+
+          const data = await response.json();
+          console.log(`✅ [DEBUG] Response from ${url}:`, data);
+
+          // Handle different possible response structures
+          if (data && data.data && data.data.ideas) {
+            ideasData = data.data.ideas;
+          } else if (data && data.ideas) {
+            ideasData = data.ideas;
+          } else if (Array.isArray(data)) {
+            ideasData = data;
+          } else {
+            console.warn('⚠️ [DEBUG] Unexpected API response structure:', data);
+            ideasData = [];
+          }
+
+          console.log(`✅ [DEBUG] Successfully loaded ${ideasData.length} ideas from ${baseURL}`);
+          break; // Exit loop on success
+
+        } catch (error) {
+          clearTimeout(timeoutId);
+          console.error(`❌ [DEBUG] Failed to load from ${baseURL}:`, {
+            name: error.name,
+            message: error.message,
+            ...(error.response && { status: error.response.status }),
+            ...(error.config && { url: error.config.url })
+          });
+          lastError = error;
+          // Continue to next URL
+        }
+      }
+
+      if (ideasData.length === 0) {
+        if (lastError) {
+          console.error('❌ [DEBUG] All attempts to load ideas failed. Last error:', lastError);
+        } else {
+          console.warn('⚠️ [DEBUG] No ideas found (empty response)');
+        }
+      }
+
       dispatch({ type: 'SET_IDEAS', payload: ideasData });
-      
+      return ideasData;
+
     } catch (error) {
-      console.error('❌ Error loading ideas:', error.message);
-      // Don't throw error, just log it and keep empty ideas array
+      console.error('❌ [DEBUG] Error in loadIdeas:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      dispatch({ type: 'SET_IDEAS', payload: [] });
+      return [];
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }

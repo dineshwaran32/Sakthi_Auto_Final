@@ -28,22 +28,30 @@ export default function LeaderboardScreen() {
   const currentUserAnim = useRef(new Animated.Value(0)).current;
   const listAnim = useRef(new Animated.Value(0)).current;
 
+  const fetchLeaderboard = async () => {
+    setLoading(true);
+    try {
+      const resInd = await api.get('/api/users/leaderboard?type=individual');
+      setIndividualStats(resInd.data.data.leaderboard || []);
+    } catch (error) {
+      // Only log to console, do not show any error UI
+      console.error('Error loading leaderboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial load
   useEffect(() => {
-    const fetchLeaderboard = async () => {
-      setLoading(true);
-      try {
-        const resInd = await api.get('/api/users/leaderboard?type=individual');
-        setIndividualStats(resInd.data.data.leaderboard || []);
-      } catch (error) {
-        // Only log to console, do not show any error UI
-        console.error('Error loading leaderboard:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchLeaderboard();
   }, []);
 
+  // Refresh when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchLeaderboard();
+    }, [])
+  );
 
   // Start animations when data loads
   useFocusEffect(
