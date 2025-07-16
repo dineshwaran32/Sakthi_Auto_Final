@@ -18,6 +18,7 @@ import {
 } from 'react-native-paper';
 import { MaterialIcons } from '@expo/vector-icons';
 import { theme, spacing } from '../utils/theme';
+import { getStatusColor, getStatusText } from '../utils/statusUtils';
 import { getNetworkConfig } from '../utils/networkConfig';
 
 const IdeaDetailModal = ({ visible, idea, onDismiss }) => {
@@ -25,25 +26,7 @@ const IdeaDetailModal = ({ visible, idea, onDismiss }) => {
 
   const [fullScreenImage, setFullScreenImage] = React.useState(null); // Add state
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'approved': return theme.colors.success;
-      case 'rejected': return theme.colors.error;
-      case 'implementing': return theme.colors.tertiary;
-      case 'implemented': return theme.colors.success;
-      default: return theme.colors.secondary;
-    }
-  };
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'approved': return 'Approved';
-      case 'rejected': return 'Rejected';
-      case 'implementing': return 'Implementing';
-      case 'implemented': return 'Implemented';
-      default: return 'Under Review';
-    }
-  };
 
   const getBenefitColor = (benefit) => {
     switch (benefit) {
@@ -93,7 +76,7 @@ const IdeaDetailModal = ({ visible, idea, onDismiss }) => {
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            <Card style={styles.ideaCard}>
+            <Card style={styles.ideaCard(idea.status)}>
               <Card.Content>
                 {/* Title and Status */}
                 <View style={styles.titleSection}>
@@ -336,9 +319,13 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: spacing.lg,
   },
-  ideaCard: {
+  ideaCard: (status) => ({
     elevation: 3,
-  },
+    borderLeftWidth: 6,
+    borderLeftColor: getStatusColor(status),
+    marginBottom: 16,
+    overflow: 'hidden',
+  }),
   titleSection: {
     flexDirection: 'row',
     alignItems: 'flex-start',

@@ -5,6 +5,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import { DefaultTheme, PaperProvider } from 'react-native-paper';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LogBox } from 'react-native';
 
@@ -183,17 +185,19 @@ function AppContent() {
 // Root App Component
 export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <PaperProvider theme={theme}>
-        <NavigationContainer>
-          <UserProvider>
-            <IdeaProvider>
-              <AppContent />
-              <StatusBar style="auto" />
-            </IdeaProvider>
-          </UserProvider>
-        </NavigationContainer>
-      </PaperProvider>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <PaperProvider theme={theme}>
+          <NavigationContainer>
+            <UserProvider>
+              <IdeaProvider>
+                <AppContent />
+                <StatusBar style="auto" />
+              </IdeaProvider>
+            </UserProvider>
+          </NavigationContainer>
+        </PaperProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }

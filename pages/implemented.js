@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useIdeas } from '../context/IdeaContext';
 import { theme, spacing } from '../utils/theme';
+import { getStatusColor, getStatusText } from '../utils/statusUtils';
 import IdeaDetailModal from '../components/IdeaDetailModal';
 import { useRefreshOnFocus } from '../hooks/useRefreshOnFocus';
 
@@ -83,22 +84,6 @@ export default function ImplementedScreen() {
     const matchesDepartment = departmentFilter === 'all' || idea.department === departmentFilter;
     return matchesSearch && matchesDepartment;
   });
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'implemented': return theme.colors.success;
-      case 'implementing': return theme.colors.tertiary;
-      default: return theme.colors.secondary;
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'implemented': return 'Implemented';
-      case 'implementing': return 'In Progress';
-      default: return 'Unknown';
-    }
-  };
 
   const getBenefitColor = (benefit) => {
     switch (benefit) {

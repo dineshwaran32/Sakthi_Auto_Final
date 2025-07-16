@@ -25,10 +25,13 @@ import { useNavigation } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
 import { useIdeas } from '../context/IdeaContext';
 import { theme, spacing } from '../utils/theme';
+import { getStatusColor, getStatusText } from '../utils/statusUtils';
 import api from '../utils/api';
 import IdeaDetailModal from '../components/IdeaDetailModal';
+import Marquee from '../components/Marquee';
 
 const { width, height: windowHeight } = Dimensions.get('window');
+
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -234,6 +237,9 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Marquee */}
+        <Marquee />
+
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
           <Card 
@@ -371,24 +377,6 @@ export default function HomeScreen() {
   );
 }
 
-const getStatusColor = (status) => {
-  switch (status) {
-    case 'approved': return theme.colors.success;
-    case 'rejected': return theme.colors.error;
-    case 'implementing': return theme.colors.tertiary;
-    default: return theme.colors.secondary;
-  }
-};
-
-const getStatusText = (status) => {
-  switch (status) {
-    case 'approved': return 'Approved';
-    case 'rejected': return 'Rejected';
-    case 'implementing': return 'Implementing';
-    default: return 'Under Review';
-  }
-};
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -400,7 +388,13 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: spacing.lg,
+    paddingBottom: 0,
     backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    borderBottomLeftRadius: 8, // Add bottom border radius
+    borderBottomRightRadius: 8, // Add bottom border radius
+    overflow: 'hidden',
     elevation: 2,
   },
   userInfo: {
@@ -445,22 +439,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   section: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
+    marginBottom: spacing.xl,
+    paddingHorizontal: 0,
   },
-  sectionTitle: {
+  sectionfornew: {
+    marginHorizontal: spacing.md,
     marginBottom: spacing.md,
-    fontWeight: 'bold',
     color: theme.colors.onSurface,
-  },
-  sectionfornew : {
-  marginBottom: spacing.md,
     fontWeight: 'bold',
-    color: '#fff',
   },
   activityCard: {
-    marginBottom: spacing.sm,
-    elevation: 1,
+    marginBottom: spacing.md,
+    marginHorizontal: spacing.md,
+    borderRadius: 12,
+    elevation: 2,
+    backgroundColor: theme.colors.surface,
   },
   activityContent: {
     flexDirection: 'row',

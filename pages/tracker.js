@@ -27,6 +27,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useUser } from '../context/UserContext';
 import { useIdeas } from '../context/IdeaContext';
 import { theme, spacing } from '../utils/theme';
+import { getStatusColor, getStatusText } from '../utils/statusUtils';
 import IdeaDetailModal from '../components/IdeaDetailModal';
 import { useRefreshOnFocus } from '../hooks/useRefreshOnFocus';
 import { useFocusEffect } from '@react-navigation/native';
@@ -98,28 +99,8 @@ export default function TrackerScreen({ route }) {
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'approved': return theme.colors.success;
-      case 'rejected': return theme.colors.error;
-      case 'implementing': return theme.colors.tertiary;
-      default: return theme.colors.secondary;
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'approved': return 'Approved';
-      case 'rejected': return 'Rejected';
-      case 'implementing': return 'Implementing';
-      default: return 'Under Review';
-    }
-  };
-
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'approved': return 'check-circle';
-      case 'rejected': return 'cancel';
       case 'implementing': return 'build';
       default: return 'schedule';
     }

@@ -20,6 +20,8 @@ if (!process.env.MONGODB_URI) {
 
 
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -34,6 +36,31 @@ const userRoutes = require('./routes/users');
 const notificationRoutes = require('./routes/notifications');
 
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = new Server(server, {
+  cors: {
+    origin: '*', // In production, replace with your frontend URL
+    methods: ['GET', 'POST']
+  },
+  transports: ['websocket', 'polling']
+});
+
+// Socket.IO connection handler
+io.on('connection', (socket) => {
+  console.log('🔌 New client connected:', socket.id);
+  
+  // Handle disconnection
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+  
+  // You can add more event handlers here as needed
+});
+
+// Make io accessible to routes
+app.set('io', io);
 
 // Connect to MongoDB
 connectDB();
@@ -126,6 +153,12 @@ app.use('*', (req, res) => {
   });
 });
 
+// Helper function to notify clients about idea updates
+export const notifyIdeaUpdate = () => {
+  io.emit('ideas_updated');
+  console.log('📢 Notified clients about idea updates');
+};
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err);
@@ -139,7 +172,7 @@ app.use((err, req, res, next) => {
 
 const PORT = 3000;
 
-app.listen(PORT,"0.0.0.0", () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
   // console.log(`🔗 http://localhost:${PORT}/health`);

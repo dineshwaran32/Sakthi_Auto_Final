@@ -125,6 +125,13 @@ const createIdea = async (req, res) => {
 
     console.log("Notifications sent");
 
+    // Notify all connected clients about the new idea
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('ideas_updated');
+      console.log('📢 Emitted ideas_updated event for new idea');
+    }
+
     res.status(201).json({
       success: true,
       message: "Idea submitted successfully",
@@ -297,6 +304,13 @@ const updateIdeaStatus = async (req, res) => {
     // Notify submitter
     await NotificationService.notifyIdeaStatusChange(idea, status, req.user);
 
+    // Notify all connected clients about the status update
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('ideas_updated');
+      console.log('📢 Emitted ideas_updated event for status change');
+    }
+
     res.json({
       success: true,
       message: "Idea status updated successfully",
@@ -388,6 +402,13 @@ const updateIdea = async (req, res) => {
     // Notify submitter if someone else edits the idea
     if (idea.submittedBy.toString() !== req.user._id.toString()) {
       await NotificationService.notifyIdeaUpdated(idea, updates, req.user);
+    }
+
+    // Notify all connected clients about the update
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('ideas_updated');
+      console.log('📢 Emitted ideas_updated event for idea update');
     }
 
     res.json({
