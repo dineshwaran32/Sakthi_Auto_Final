@@ -18,11 +18,6 @@ async function recalculateUserCreditPoints(userId, reason, updater) {
 
     // If a new idea is provided, include it in the calculation
 
-    // Count ideas by status
-    let submitted = ideas.length;
-    let approved = ideas.filter((i) => i.status === "approved").length;
-    let implemented = ideas.filter((i) => i.status === "implemented").length;
-
     // Get current user data
     const oldUser = await User.findById(userId);
     if (!oldUser) {
@@ -31,12 +26,22 @@ async function recalculateUserCreditPoints(userId, reason, updater) {
     }
 
     const oldPoints = oldUser.creditPoints || 0;
-    const creditPoints = submitted * 10 + approved * 20 + implemented * 30;
+    
+    // Calculate points properly without double counting
+    // Each idea should only give points for its highest status
+    const creditPoints = ideas.reduce((total, idea) => {
+      if (idea.status === 'implemented') return total + 30;
+      if (idea.status === 'approved') return total + 20;
+      return total + 10; // For submitted/under review
+    }, 0);
 
     console.log(`📊 Credit Points Calculation:`, {
-      submitted,
-      approved,
-      implemented,
+      totalIdeas: ideas.length,
+      byStatus: {
+        submitted: ideas.filter(i => !['approved', 'implemented'].includes(i.status)).length,
+        approved: ideas.filter(i => i.status === 'approved').length,
+        implemented: ideas.filter(i => i.status === 'implemented').length
+      },
       oldPoints,
       newPoints: creditPoints,
       difference: creditPoints - oldPoints,

@@ -18,7 +18,7 @@ export const NETWORK_CONFIG = {
   
   // Production environment
   production: {
-    baseURLs: ['https://your-production-api.com'],
+    baseURLs: ['http://10.35.187.142:3000'],
     timeout: 30000,
     retryAttempts: 3,
     retryDelay: 2000,

@@ -52,18 +52,36 @@ const Marquee = () => {
   }, [marqueeText, textWidth]);
 
   useEffect(() => {
-    // Filter for implemented ideas
-    const implementedIdeas = ideas.filter(idea => 
-      idea.status === 'implemented' || idea.status === 'implementing'
-    );
+    // Filter and sort implemented ideas by creation date (newest first)
+    const recentImplementedIdeas = ideas
+      .filter(idea => idea.status === 'implemented' || idea.status === 'implementing')
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 5); // Show only the 5 most recent
 
-    if (implementedIdeas.length > 0) {
-      const text = implementedIdeas
-        .map(idea => `🎯 ${idea.title} (${idea.submittedBy?.name || user?.name || 'Team Member'})`)
-        .join('   •••   ');
+    if (recentImplementedIdeas.length > 0) {
+      // Format the text with emojis and styling
+      const formattedIdeas = recentImplementedIdeas.map(idea => {
+        const emoji = idea.status === 'implemented' ? '✅' : '🔄';
+        const date = idea.updatedAt ? new Date(idea.updatedAt).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric' 
+        }) : '';
+        return `${emoji} ${idea.title} (${idea.submittedBy?.name || user?.name || 'Team Member'}) ${date}`;
+      });
+      
+      // Add a header and join all ideas with more spacing
+      const header = '✨ Recently Implemented: ';
+      const separator = '   •••••   ';
+      let text = header + formattedIdeas.join(separator);
+      
+      // Repeat the content to ensure it's long enough
+      text = text + separator + text; // Repeat once to make it longer
       setMarqueeText(text);
     } else {
-      setMarqueeText('');
+      // Make the fallback message longer by repeating it
+      const fallback = '✨ No recently implemented ideas yet. Be the first to contribute! ';
+      setMarqueeText(fallback + fallback);
     }
   }, [ideas]);
 
@@ -76,8 +94,9 @@ const Marquee = () => {
     }
 
     // Calculate duration based on text width and container width
-    const baseDuration = 10000; // Base duration in ms
-    const duration = Math.max(baseDuration, (textWidth / 50) * 1000); // Adjust speed factor as needed
+    const baseDuration = 20000; // Increased base duration for slower scrolling
+    const speedFactor = 30; // Reduced speed factor for slower movement
+    const duration = Math.max(baseDuration, (textWidth / speedFactor) * 1000);
 
     // Reset position to right side
     animatedValue.setValue(containerWidth);
@@ -195,12 +214,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   marqueeText: {
-    color: colors.onPrimary || 'white',
+    color: colors.onPrimary,
     fontSize: 14,
-    fontWeight: '500',
     whiteSpace: 'nowrap',
     fontWeight: '500',
-    paddingHorizontal: 10,
+    paddingHorizontal: 20, // Increased padding for better spacing
+    lineHeight: 22, // Better line height for readability
+    letterSpacing: 0.3, // Slightly increased letter spacing for better readability
   },
 });
 

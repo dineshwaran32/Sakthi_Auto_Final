@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
   sectionfornew: {
     marginHorizontal: spacing.md,
     marginBottom: spacing.md,
-    color: theme.colors.onSurface,
+    color: '#FFFFFF', // Changed to white
     fontWeight: 'bold',
   },
   activityCard: {
