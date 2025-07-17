@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['employee', 'reviewer'],
+    enum: ['employee', 'reviewer','admin'],
     default: 'employee'
   },
   creditPoints: {

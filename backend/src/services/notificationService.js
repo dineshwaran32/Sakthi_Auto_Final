@@ -28,34 +28,86 @@ class NotificationService {
 
   // Idea submission notification
   static async notifyIdeaSubmitted(idea, submitter) {
-    try {
-      // Notify all reviewers
-      const reviewers = await User.find({ 
-        role: 'reviewer', 
-        isActive: true 
-      });
-
-      const notifications = reviewers.map(reviewer => ({
-        recipient: reviewer._id,
-        recipientEmployeeNumber: reviewer.employeeNumber,
+  try {
+    console.log('🔍 [DEBUG] Starting notifyIdeaSubmitted function');
+    console.log('🔍 [DEBUG] Submitter details:', JSON.stringify({
+      id: submitter._id,
+      name: submitter.name,
+      role: submitter.role,
+      department: submitter.department
+    }, null, 2));
+    
+    console.log('🔍 [DEBUG] Looking for admin users...');
+    const adminQuery = { role: 'admin', isActive: true };
+    console.log('🔍 [DEBUG] Admin query:', JSON.stringify(adminQuery, null, 2));
+    
+    // Get count of all users for debugging
+    const totalUsers = await User.countDocuments({});
+    console.log(`🔍 [DEBUG] Total users in database: ${totalUsers}`);
+    
+    // Get count of admin users
+    const adminCount = await User.countDocuments(adminQuery);
+    console.log(`🔍 [DEBUG] Total admin users: ${adminCount}`);
+    
+    // Find all users to see what roles exist
+    const allUsers = await User.find({}).select('_id name email role isActive');
+    console.log('🔍 [DEBUG] All users in database:', JSON.stringify(allUsers, null, 2));
+    
+    // Now find just the admins
+    const admins = await User.find(adminQuery).select('_id name email role employeeNumber');
+    
+    console.log(`🔍 [DEBUG] Found ${admins.length} admin users:`, 
+      JSON.stringify(admins.map(a => ({
+        id: a._id,
+        name: a.name,
+        email: a.email,
+        role: a.role,
+        employeeNumber: a.employeeNumber
+      })), null, 2)
+    );
+    
+    if (admins.length === 0) {
+      console.warn('⚠️ [WARNING] No active admin users found to notify');
+      return [];
+    }
+    
+    // Rest of your notification creation code...
+    const notifications = admins.map(admin => {
+      const notification = {
+        recipient: admin._id,
+        recipientEmployeeNumber: admin.employeeNumber,
         type: 'idea_submitted',
-        title: 'New Idea Submitted',
-        message: `${submitter.name} submitted a new idea: "${idea.title}"`,
+        title: 'New Idea Submitted - Action Required',
+        message: `${submitter.name} from ${submitter.department || 'unknown department'} submitted a new idea: "${idea.title}"`,
         relatedIdea: idea._id,
         relatedUser: submitter._id,
         priority: 'high',
         metadata: {
           ideaTitle: idea.title,
           submitterName: submitter.name,
-          department: idea.department
+          department: idea.department || submitter.department,
+          timestamp: new Date().toISOString()
         }
-      }));
+      };
+      console.log('📝 [DEBUG] Creating notification:', JSON.stringify(notification, null, 2));
+      return notification;
+    });
 
-      await this.createMultipleNotifications(notifications);
-    } catch (error) {
-      console.error('Error notifying idea submission:', error);
-    }
+    console.log('💾 [DEBUG] Saving notifications to database...');
+    const result = await this.createMultipleNotifications(notifications);
+    console.log('✅ [DEBUG] Notifications created successfully:', 
+      JSON.stringify({
+        count: result.length,
+        notificationIds: result.map(n => n._id)
+      }, null, 2)
+    );
+    
+    return result;
+  } catch (error) {
+    console.error('❌ [ERROR] Error in notifyIdeaSubmitted:', error);
+    throw error;
   }
+}
 
   // Idea status change notification
   static async notifyIdeaStatusChange(idea, newStatus, reviewer) {

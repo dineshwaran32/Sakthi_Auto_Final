@@ -5,14 +5,24 @@ async function getNotifications(req, res) {
   try {
     const { page = 1, limit = 20, isRead } = req.query;
     
+    console.log('🔍 [DEBUG] Fetching notifications for user:', {
+      userId: req.user._id,
+      role: req.user.role,
+      isRead
+    });
+    
     const filter = { recipient: req.user._id };
     if (isRead !== undefined) filter.isRead = isRead === 'true';
 
     const notifications = await Notification.find(filter)
       .populate('relatedIdea', 'title status')
+      .populate('recipient', 'name role')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
-      .skip((page - 1) * limit);
+      .skip((page - 1) * limit)
+      .lean();
+      
+    console.log(`📋 [DEBUG] Found ${notifications.length} notifications for user ${req.user._id} (${req.user.role})`);
 
     const total = await Notification.countDocuments(filter);
     const unreadCount = await Notification.countDocuments({ 

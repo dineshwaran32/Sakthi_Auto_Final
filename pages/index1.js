@@ -49,13 +49,20 @@ export default function HomeScreen() {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
 
   const fetchNotifications = async () => {
+    // Only fetch notifications if user is admin
+    if (!user || user.role !== 'admin') {
+      console.log('Skipping notification fetch: User is not an admin');
+      return;
+    }
+    
     setLoadingNotifications(true);
     try {
+      console.log('Fetching notifications for user:', user._id, user.role);
       const res = await api.get('/api/notifications');
+      console.log('Received notifications:', res.data.data.notifications.length);
       setNotifications(res.data.data.notifications);
       setUnreadCount(res.data.data.unreadCount);
     } catch (err) {
-      // Only log to console, do not show any error UI
       console.error('Notification fetch error:', err);
     } finally {
       setLoadingNotifications(false);
@@ -63,7 +70,10 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    if (user) fetchNotifications();
+    if (user) {
+      console.log('User changed, fetching notifications:', user._id, user.role);
+      fetchNotifications();
+    }
   }, [user]);
 
   const markAsRead = async (id) => {

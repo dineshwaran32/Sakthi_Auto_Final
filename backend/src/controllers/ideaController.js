@@ -125,10 +125,38 @@ const createIdea = async (req, res) => {
 
     console.log("Credit points recalculation completed");
 
-    // Notify reviewers
-    await NotificationService.notifyIdeaSubmitted(idea, req.user);
+    // Prepare user data for notification
+    const userForNotification = {
+      _id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+      employeeNumber: req.user.employeeNumber,
+      department: idea.department || req.user.department
+    };
 
-    console.log("Notifications sent");
+    console.log('🔍 [DEBUG] Calling notifyIdeaSubmitted with:', {
+      idea: {
+        _id: idea._id,
+        title: idea.title,
+        department: idea.department
+      },
+      submitter: {
+        _id: userForNotification._id,
+        name: userForNotification.name,
+        role: userForNotification.role,
+        department: userForNotification.department
+      },
+      timestamp: new Date().toISOString()
+    });
+
+    try {
+      await NotificationService.notifyIdeaSubmitted(idea, userForNotification);
+      console.log('✅ [DEBUG] NotificationService.notifyIdeaSubmitted completed successfully');
+    } catch (notificationError) {
+      // Log the error but don't fail the request
+      console.error('⚠️ [ERROR] Failed to send notification:', notificationError);
+    }
 
     // Notify all connected clients about the new idea
     const io = req.app.get('io');
