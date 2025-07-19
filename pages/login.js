@@ -107,7 +107,7 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      const response = await api.post('/api/auth/send-otp', { employeeNumber });
+      const response = await api.post('/app/api/auth/send-otp', { employeeNumber });
       if (response.data.success) {
         setStep(2);
         Alert.alert('Success', 'OTP sent to your registered mobile number');
@@ -141,7 +141,7 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      const response = await api.post('/api/auth/verify-otp', { employeeNumber, otp });
+      const response = await api.post('/app/api/auth/verify-otp', { employeeNumber, otp });
       if (response.data.success) {
         const loginSuccess = await login(response.data);
         if (loginSuccess) {

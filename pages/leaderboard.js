@@ -31,7 +31,7 @@ export default function LeaderboardScreen() {
   const fetchLeaderboard = async () => {
     setLoading(true);
     try {
-      const resInd = await api.get('/api/users/leaderboard?type=individual');
+      const resInd = await api.get('/app/api/users/leaderboard?type=individual');
       setIndividualStats(resInd.data.data.leaderboard || []);
     } catch (error) {
       // Only log to console, do not show any error UI

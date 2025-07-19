@@ -150,7 +150,7 @@ export const UserProvider = ({ children }) => {
         console.log('Current user data:', user);
         
         // Fetch fresh user data from the server
-        const response = await api.get('/api/auth/profile');
+        const response = await api.get('/app/api/auth/profile');
         console.log('Profile API response:', response.data);
         
         if (response.data.success) {

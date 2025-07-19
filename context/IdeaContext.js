@@ -140,7 +140,7 @@ export const IdeaProvider = ({ children }) => {
         const timeoutId = setTimeout(() => controller.abort(), timeout);
 
         try {
-          const url = `${baseURL}/api/ideas`;
+          const url = `${baseURL}/app/api/ideas`;
           console.log(`🌐 [DEBUG] Trying to fetch ideas from: ${url}`);
 
           const response = await fetch(url, {
@@ -222,7 +222,7 @@ export const IdeaProvider = ({ children }) => {
   const submitIdea = useCallback(async (ideaData) => {
     try {
       console.log('🚀 Submitting idea...');
-      const res = await api.post('/api/ideas', ideaData);
+      const res = await api.post('/app/api/ideas', ideaData);
       console.log('✅ Idea submitted successfully');
       
       // Force reload ideas to get the latest data
@@ -242,7 +242,7 @@ export const IdeaProvider = ({ children }) => {
 
   const updateIdeaStatus = useCallback(async (ideaId, statusData) => {
     try {
-      const res = await api.put(`/api/ideas/${ideaId}/status`, statusData);
+      const res = await api.put(`/app/api/ideas/${ideaId}/status`, statusData);
       dispatch({ type: 'UPDATE_IDEA', payload: res.data.data.idea });
       // Refresh user data to update credit points
       if (refreshUserCallback) {
@@ -257,7 +257,7 @@ export const IdeaProvider = ({ children }) => {
 
   const editIdea = useCallback(async (ideaId, updatedData) => {
     try {
-      const res = await api.put(`/api/ideas/${ideaId}`, updatedData);
+      const res = await api.put(`/app/api/ideas/${ideaId}`, updatedData);
       await loadIdeas();
       return res.data.data.idea;
     } catch (error) {
@@ -268,7 +268,7 @@ export const IdeaProvider = ({ children }) => {
 
   const deleteIdea = useCallback(async (ideaId) => {
     try {
-      const response = await api.delete(`/api/ideas/${ideaId}`);
+      const response = await api.delete(`/app/api/ideas/${ideaId}`);
       
       if (response.data.success) {
         // Remove the deleted idea from the local state immediately

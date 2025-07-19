@@ -157,8 +157,8 @@ export const getNetworkDiagnostics = async () => {
   diagnostics.tests.connectivity = await testNetworkConnectivity();
   
   // Test specific endpoints
-  diagnostics.tests.health = await testSpecificEndpoint('/api/health');
-  diagnostics.tests.otp = await testSpecificEndpoint('/api/auth/send-otp', 'POST', { employeeNumber: 'test123' });
+  diagnostics.tests.health = await testSpecificEndpoint('/app/api/health');
+  diagnostics.tests.otp = await testSpecificEndpoint('/app/api/auth/send-otp', 'POST', { employeeNumber: 'test123' });
 
   console.log('🔍 Network Diagnostics:', diagnostics);
   return diagnostics;
@@ -173,11 +173,11 @@ export const testAllEndpoints = async () => {
   const endpoints = [
     '/',
     '/api',
-    '/api/',
-    '/api/health',
-    '/api/auth',
-    '/api/auth/',
-    '/api/auth/send-otp',
+    '/app/api/',
+    '/app/api/health',
+    '/app/api/auth',
+    '/app/api/auth/',
+    '/app/api/auth/send-otp',
     '/auth',
     '/auth/send-otp',
     '/health',

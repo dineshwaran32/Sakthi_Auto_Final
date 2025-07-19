@@ -58,7 +58,7 @@ export default function HomeScreen() {
     setLoadingNotifications(true);
     try {
       console.log('Fetching notifications for user:', user._id, user.role);
-      const res = await api.get('/api/notifications');
+      const res = await api.get('/app/api/notifications');
       console.log('Received notifications:', res.data.data.notifications.length);
       setNotifications(res.data.data.notifications);
       setUnreadCount(res.data.data.unreadCount);
@@ -78,7 +78,7 @@ export default function HomeScreen() {
 
   const markAsRead = async (id) => {
     try {
-      await api.put(`/api/notifications/${id}/read`);
+      await api.put(`/app/api/notifications/${id}/read`);
       fetchNotifications();
     } catch (err) {
       // Only log to console, do not show any error UI
@@ -88,7 +88,7 @@ export default function HomeScreen() {
 
   const markAllAsRead = async () => {
     try {
-      await api.put('/api/notifications/read-all');
+      await api.put('/app/api/notifications/read-all');
       fetchNotifications();
     } catch (err) {
       // Only log to console, do not show any error UI

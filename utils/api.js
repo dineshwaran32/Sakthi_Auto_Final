@@ -190,8 +190,8 @@ export async function uploadImageAsync(uri) {
     type: `image/${fileType}`,
   });
 
-  // Use your backend's upload endpoint (should be /upload)
-  const response = await fetch(`${networkConfig.baseURL}/upload`, {
+  // Use your backend's upload endpoint (should be /app/upload)
+  const response = await fetch(`${networkConfig.baseURL}/app/upload`, {
     method: 'POST',
     body: formData,
     headers: {

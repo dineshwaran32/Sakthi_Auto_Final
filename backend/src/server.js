@@ -100,11 +100,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static files - serve uploaded images
 const path = require('path');
 const uploadsDir = path.join(__dirname, '..', 'uploads');
-app.use('/uploads', express.static(uploadsDir));
+app.use('/app/uploads', express.static(uploadsDir));
 
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/app/api/health', (req, res) => {
   res.json({
     status: 'success',
     message: 'Sakthi Spark API is running',
@@ -113,10 +113,10 @@ app.get('/api/health', (req, res) => {
 });
 
 // API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/ideas', ideaRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/notifications', notificationRoutes);
+app.use('/app/api/auth', authRoutes);
+app.use('/app/api/ideas', ideaRoutes);
+app.use('/app/api/users', userRoutes);
+app.use('/app/api/notifications', notificationRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

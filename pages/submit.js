@@ -408,7 +408,7 @@ export default function SubmitIdeaScreen() {
       
       // Try each base URL until one works or all fail
       for (const url of baseURLs) {
-        const apiUrl = `${url}/api/ideas`;
+        const apiUrl = `${url}/app/api/ideas`;
         console.log('Trying API URL:', apiUrl);
         try {
           // 3. Make the request with retries

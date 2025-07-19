@@ -172,7 +172,7 @@ const IdeaDetailModal = ({ visible, idea, onDismiss }) => {
                     <ScrollView horizontal style={{ marginVertical: 8 }} showsHorizontalScrollIndicator={false}>
                       {idea.images.map((img, idx) => {
                         const { baseURL } = getNetworkConfig();
-                        const imgUri = img.filename ? `${baseURL}/uploads/${img.filename}` : (img.url || img.uri || '');
+                        const imgUri = img.filename ? `${baseURL}/app/uploads/${img.filename}` : (img.url || img.uri || '');
                         return (
                           <TouchableOpacity key={idx} onPress={() => setFullScreenImage(imgUri)}>
                             <View style={{ marginRight: 12 }}>
