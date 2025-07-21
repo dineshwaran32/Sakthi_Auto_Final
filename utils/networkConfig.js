@@ -86,15 +86,6 @@ export const PLATFORM_NETWORK_CONFIG = {
 export const debugNetworkInfo = () => {
   const config = getNetworkConfig();
   const platform = Platform.OS;
-  
-  console.log('🌐 Network Configuration:', {
-    environment: getCurrentEnvironment(),
-    platform,
-    baseURL: config.baseURL,
-    timeout: config.timeout,
-    isDev: __DEV__,
-    platformConfig: PLATFORM_NETWORK_CONFIG[platform]
-  });
 };
 
 export default {

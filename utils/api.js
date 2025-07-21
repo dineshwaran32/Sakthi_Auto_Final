@@ -23,15 +23,6 @@ const checkNetworkAndMakeRequest = async (config) => {
   try {
     const netInfo = await NetInfo.getNetworkStateAsync();
     
-    console.log('📡 Network Status:', {
-      isConnected: netInfo.isConnected,
-      isInternetReachable: netInfo.isInternetReachable,
-      type: netInfo.type,
-      isWifi: netInfo.type === NetInfo.NetworkStateType.WIFI,
-      isCellular: netInfo.type === NetInfo.NetworkStateType.CELLULAR,
-      details: netInfo.details
-    });
-    
     if (!netInfo.isConnected) {
       throw new Error('No internet connection. Please check your network settings.');
     }
@@ -42,7 +33,6 @@ const checkNetworkAndMakeRequest = async (config) => {
     
     // Test connectivity to the server with a simple ping
     try {
-      console.log('🔗 Testing server connectivity...');
       const testResponse = await fetch(`${config.baseURL}`, { 
         method: 'HEAD',
         timeout: 5000,
@@ -50,16 +40,12 @@ const checkNetworkAndMakeRequest = async (config) => {
           'User-Agent': 'SakthiApp/1.0'
         }
       });
-      console.log('✅ Server connectivity test passed, status:', testResponse.status);
     } catch (testError) {
-      console.warn('⚠️ Server connectivity test failed:', testError.message);
-      console.log('🔍 This might be due to network security policies in production builds');
       // Don't throw here, let the actual request try
     }
     
     return config;
   } catch (error) {
-    console.error('❌ Network check failed:', error);
     throw error;
   }
 };
@@ -68,14 +54,6 @@ const checkNetworkAndMakeRequest = async (config) => {
 api.interceptors.request.use(
   async (config) => {
     try {
-      console.log('🚀 Making API request:', {
-        method: config.method?.toUpperCase(),
-        url: config.url,
-        baseURL: config.baseURL,
-        fullURL: `${config.baseURL}${config.url}`,
-        headers: config.headers
-      });
-      
       // Check network connectivity first
       await checkNetworkAndMakeRequest(config);
       
@@ -93,18 +71,15 @@ api.interceptors.request.use(
       
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log('🔑 Token attached to request:', config.url);
       } else {
-        console.warn('⚠️  No token found for request:', config.url);
+        // No token found for request
       }
     } catch (error) {
-      console.error('❌ Error in request interceptor:', error);
       throw error;
     }
     return config;
   },
   (error) => {
-    console.error('❌ Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -112,28 +87,11 @@ api.interceptors.request.use(
 // Handle response errors
 api.interceptors.response.use(
   (response) => {
-    console.log('✅ API Response Success:', {
-      url: response.config.url,
-      status: response.status,
-      data: response.data
-    });
     return response;
   },
   async (error) => {
-    console.error('🚨 API Error:', {
-      url: error.config?.url,
-      status: error.response?.status,
-      message: error.response?.data?.message || error.message,
-      code: error.code,
-      fullError: error
-    });
-    
     // Handle network errors
     if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED') {
-      console.error('🌐 Network error detected. This might be due to:');
-      console.error('1. Network security policies blocking HTTP traffic');
-      console.error('2. Server not reachable from production build');
-      console.error('3. Firewall or network restrictions');
       throw new Error('Network error. Please check your internet connection and try again.');
     }
     
@@ -144,7 +102,6 @@ api.interceptors.response.use(
     
     // Handle rate limiting with retry logic
     if (error.response?.status === 429) {
-      console.warn('⚠️ Rate limited - will retry after delay');
       const retryAfter = error.response.headers['retry-after'] || 60; // Default to 60 seconds
       
       // Wait for the specified time before retrying
@@ -155,13 +112,12 @@ api.interceptors.response.use(
     }
     
     if (error.response?.status === 401) {
-      console.warn('🔒 Unauthorized - clearing tokens');
       // Clear invalid tokens
       try {
         await AsyncStorage.removeItem('token');
         await AsyncStorage.removeItem('user');
       } catch (clearError) {
-        console.error('Error clearing tokens:', clearError);
+        // Error clearing tokens
       }
     }
     
@@ -201,7 +157,6 @@ export async function uploadImageAsync(uri) {
 
   if (!response.ok) {
     const text = await response.text();
-    console.error('Image upload failed:', response.status, text);
     throw new Error('Image upload failed');
   }
   const data = await response.json();

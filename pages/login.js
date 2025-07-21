@@ -180,15 +180,8 @@ export default function LoginScreen() {
   const handleDebugNetwork = async () => {
     setLoading(true);
     try {
-      console.log('🔍 Starting comprehensive network debug...');
-      
-      // Test 1: Basic network connectivity
       const result = await testNetworkConnectivity();
-      console.log('📡 Network Test Result:', result);
-      
-      // Test 2: All possible endpoints
       const endpointResult = await testAllEndpoints();
-      console.log('🔍 Endpoint Test Result:', endpointResult);
       
       if (result.success && endpointResult.success) {
         Alert.alert('Network Test', '✅ Network connectivity is working properly!\n\nCheck console for detailed results.');
@@ -204,7 +197,6 @@ export default function LoginScreen() {
         Alert.alert('Network Test', errorMessage);
       }
     } catch (error) {
-      console.error('Debug Error:', error);
       Alert.alert('Debug Error', `Failed to run network test: ${error.message}`);
     } finally {
       setLoading(false);

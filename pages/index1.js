@@ -49,21 +49,30 @@ export default function HomeScreen() {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
 
   const fetchNotifications = async () => {
-    // Only fetch notifications if user is admin
-    if (!user || user.role !== 'admin') {
-      console.log('Skipping notification fetch: User is not an admin');
+    // Fetch notifications for all authenticated users
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
       return;
     }
     
     setLoadingNotifications(true);
     try {
-      console.log('Fetching notifications for user:', user._id, user.role);
+      // Fetch notifications for the current user
+      // Admins get all notifications, regular users get their own notifications
       const res = await api.get('/app/api/notifications');
-      console.log('Received notifications:', res.data.data.notifications.length);
-      setNotifications(res.data.data.notifications);
-      setUnreadCount(res.data.data.unreadCount);
+      
+      if (res.data && res.data.data) {
+        setNotifications(res.data.data.notifications || []);
+        setUnreadCount(res.data.data.unreadCount || 0);
+      } else {
+        setNotifications([]);
+        setUnreadCount(0);
+      }
     } catch (err) {
-      console.error('Notification fetch error:', err);
+      // Silently handle error - set empty state
+      setNotifications([]);
+      setUnreadCount(0);
     } finally {
       setLoadingNotifications(false);
     }
@@ -71,7 +80,6 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (user) {
-      console.log('User changed, fetching notifications:', user._id, user.role);
       fetchNotifications();
     }
   }, [user]);
@@ -79,20 +87,32 @@ export default function HomeScreen() {
   const markAsRead = async (id) => {
     try {
       await api.put(`/app/api/notifications/${id}/read`);
+      // Update local state immediately for better UX
+      setNotifications(prev => 
+        prev.map(n => n._id === id ? { ...n, isRead: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      // Also fetch fresh data
       fetchNotifications();
     } catch (err) {
-      // Only log to console, do not show any error UI
-      console.error('Notification markAsRead error:', err);
+      // Revert optimistic update on error
+      fetchNotifications();
     }
   };
 
   const markAllAsRead = async () => {
     try {
       await api.put('/app/api/notifications/read-all');
+      // Update local state immediately for better UX
+      setNotifications(prev => 
+        prev.map(n => ({ ...n, isRead: true }))
+      );
+      setUnreadCount(0);
+      // Also fetch fresh data
       fetchNotifications();
     } catch (err) {
-      // Only log to console, do not show any error UI
-      console.error('Notification markAllAsRead error:', err);
+      // Revert optimistic update on error
+      fetchNotifications();
     }
   };
 

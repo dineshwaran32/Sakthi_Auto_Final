@@ -35,7 +35,7 @@ export default function LeaderboardScreen() {
       setIndividualStats(resInd.data.data.leaderboard || []);
     } catch (error) {
       // Only log to console, do not show any error UI
-      console.error('Error loading leaderboard:', error);
+
     } finally {
       setLoading(false);
     }

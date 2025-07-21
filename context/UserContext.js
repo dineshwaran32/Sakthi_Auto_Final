@@ -89,7 +89,7 @@ export const UserProvider = ({ children }) => {
         }
       }
     } catch (error) {
-      console.error('Error checking auth state:', error);
+      // Error checking auth state
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -101,33 +101,19 @@ export const UserProvider = ({ children }) => {
 
   const login = useCallback(async (loginResponse) => {
     try {
-      console.log('UserContext login - Full response:', loginResponse);
-      console.log('UserContext login - response.data:', loginResponse.data);
-      console.log('UserContext login - response.data.data:', loginResponse.data.data);
-      
       const { token, user } = loginResponse.data;
-      console.log('UserContext login - Extracted token:', token);
-      console.log('UserContext login - Extracted user:', user);
       
       if (!token || !user) {
-        console.error('UserContext login - Missing token or user data');
         return false;
       }
       
       const userWithToken = { ...user, token };
-      console.log('UserContext login - User with token:', userWithToken);
       
       await storage.setItem('user', JSON.stringify(userWithToken));
       await storage.setItem('token', token);
       dispatch({ type: 'LOGIN', payload: userWithToken });
-      console.log('UserContext login - Successfully saved and dispatched');
       return true;
     } catch (error) {
-      console.error('UserContext login error:', error);
-      console.error('UserContext login error details:', {
-        message: error.message,
-        stack: error.stack
-      });
       return false;
     }
   }, []);
@@ -143,31 +129,23 @@ export const UserProvider = ({ children }) => {
 
   const refreshUser = useCallback(async () => {
     try {
-      console.log('Refreshing user data...');
       const userData = await storage.getItem('user');
       if (userData) {
         const user = JSON.parse(userData);
-        console.log('Current user data:', user);
         
         // Fetch fresh user data from the server
         const response = await api.get('/app/api/auth/profile');
-        console.log('Profile API response:', response.data);
         
         if (response.data.success) {
           const updatedUser = { ...response.data.data.user, token: user.token };
-          console.log('Updated user data:', updatedUser);
           
           await storage.setItem('user', JSON.stringify(updatedUser));
           dispatch({ type: 'UPDATE_USER', payload: updatedUser });
-          console.log('User data updated successfully');
         } else {
-          console.log('Profile API returned error:', response.data);
         }
       } else {
-        console.log('No user data found in storage');
       }
     } catch (error) {
-      console.error('Error refreshing user data:', error);
     }
   }, []);
 

@@ -72,7 +72,6 @@ export const IdeaProvider = ({ children }) => {
 
     // Listen for idea update events
     socketRef.current.on('ideas_updated', () => {
-      console.log('🔔 Real-time: ideas_updated event received');
       loadIdeas();
     });
     // You can add more events if needed (e.g., 'idea_added', 'idea_deleted')
@@ -110,12 +109,10 @@ export const IdeaProvider = ({ children }) => {
 
   const loadIdeas = useCallback(async () => {
     try {
-      console.log('🔄 [DEBUG] Starting to load ideas...');
       dispatch({ type: 'SET_LOADING', payload: true });
 
       // Get network configuration with all available base URLs
       const { baseURLs = [], timeout = 30000 } = getNetworkConfig();
-      console.log('🔍 [DEBUG] Available base URLs:', baseURLs);
 
       // Get token from AsyncStorage
       let token = null;
@@ -123,12 +120,12 @@ export const IdeaProvider = ({ children }) => {
         const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
         token = await AsyncStorage.getItem('token');
         if (!token) {
-          console.error('❌ [DEBUG] No token found in AsyncStorage');
+          // No token found in AsyncStorage
         } else {
-          console.log('🔑 [DEBUG] Token retrieved from AsyncStorage:', token.slice(0, 10) + '...');
+          // Token retrieved from AsyncStorage
         }
       } catch (tokenErr) {
-        console.error('❌ [DEBUG] Error retrieving token:', tokenErr);
+        // Error retrieving token
       }
 
       let lastError = null;
@@ -141,7 +138,7 @@ export const IdeaProvider = ({ children }) => {
 
         try {
           const url = `${baseURL}/app/api/ideas`;
-          console.log(`🌐 [DEBUG] Trying to fetch ideas from: ${url}`);
+
 
           const response = await fetch(url, {
             method: 'GET',
@@ -161,7 +158,6 @@ export const IdeaProvider = ({ children }) => {
           }
 
           const data = await response.json();
-          console.log(`✅ [DEBUG] Response from ${url}:`, data);
 
           // Handle different possible response structures
           if (data && data.data && data.data.ideas) {
@@ -171,43 +167,25 @@ export const IdeaProvider = ({ children }) => {
           } else if (Array.isArray(data)) {
             ideasData = data;
           } else {
-            console.warn('⚠️ [DEBUG] Unexpected API response structure:', data);
             ideasData = [];
           }
 
-          console.log(`✅ [DEBUG] Successfully loaded ${ideasData.length} ideas from ${baseURL}`);
           break; // Exit loop on success
 
         } catch (error) {
           clearTimeout(timeoutId);
-          console.error(`❌ [DEBUG] Failed to load from ${baseURL}:`, {
-            name: error.name,
-            message: error.message,
-            ...(error.response && { status: error.response.status }),
-            ...(error.config && { url: error.config.url })
-          });
+
           lastError = error;
           // Continue to next URL
         }
       }
 
-      if (ideasData.length === 0) {
-        if (lastError) {
-          console.error('❌ [DEBUG] All attempts to load ideas failed. Last error:', lastError);
-        } else {
-          console.warn('⚠️ [DEBUG] No ideas found (empty response)');
-        }
-      }
+
 
       dispatch({ type: 'SET_IDEAS', payload: ideasData });
       return ideasData;
 
     } catch (error) {
-      console.error('❌ [DEBUG] Error in loadIdeas:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      });
       dispatch({ type: 'SET_IDEAS', payload: [] });
       return [];
     } finally {
@@ -221,21 +199,32 @@ export const IdeaProvider = ({ children }) => {
 
   const submitIdea = useCallback(async (ideaData) => {
     try {
-      console.log('🚀 Submitting idea...');
       const res = await api.post('/app/api/ideas', ideaData);
-      console.log('✅ Idea submitted successfully');
-      
+      const submittedIdea = res.data.data.idea;
+
+      // Create notification for admins about new idea submission
+      try {
+        await api.post('/app/api/notifications', {
+          title: 'New Idea Submitted',
+          message: `${ideaData.submittedBy || 'A user'} submitted a new idea: "${ideaData.title}"`,
+          type: 'idea_submitted',
+          ideaId: submittedIdea._id,
+          targetRole: 'admin' // Notify all admins
+        });
+      } catch (notificationError) {
+        // Don't fail the submission if notification creation fails
+      }
+
       // Force reload ideas to get the latest data
       await loadIdeas();
-      
+
       // Refresh user data to update credit points
       if (refreshUserCallback) {
         await refreshUserCallback();
       }
-      
-      return res.data.data.idea;
+
+      return submittedIdea;
     } catch (error) {
-      console.error('❌ Error submitting idea:', error.message);
       throw error;
     }
   }, [loadIdeas, refreshUserCallback]);
@@ -243,14 +232,39 @@ export const IdeaProvider = ({ children }) => {
   const updateIdeaStatus = useCallback(async (ideaId, statusData) => {
     try {
       const res = await api.put(`/app/api/ideas/${ideaId}/status`, statusData);
-      dispatch({ type: 'UPDATE_IDEA', payload: res.data.data.idea });
+      const updatedIdea = res.data.data.idea;
+      dispatch({ type: 'UPDATE_IDEA', payload: updatedIdea });
+
+      // Create notification for the idea submitter about status change
+      try {
+        const statusMessages = {
+          'approved': 'Your idea has been approved! 🎉',
+          'rejected': 'Your idea has been reviewed. Please check for feedback.',
+          'implementing': 'Great news! Your idea is now being implemented! 🚀',
+          'implemented': 'Congratulations! Your idea has been successfully implemented! ✅',
+          'under_review': 'Your idea is now under review by our team.'
+        };
+
+        const message = statusMessages[statusData.status] || `Your idea status has been updated to: ${statusData.status}`;
+        
+        await api.post('/app/api/notifications', {
+          title: 'Idea Status Update',
+          message: `"${updatedIdea.title}" - ${message}`,
+          type: 'status_update',
+          ideaId: updatedIdea._id,
+          targetUserId: updatedIdea.submittedBy?._id || updatedIdea.submittedBy,
+          status: statusData.status
+        });
+      } catch (notificationError) {
+        // Don't fail the status update if notification creation fails
+      }
+
       // Refresh user data to update credit points
       if (refreshUserCallback) {
         await refreshUserCallback();
       }
-      return res.data.data.idea;
+      return updatedIdea;
     } catch (error) {
-      console.error('Error updating idea status:', error);
       throw error;
     }
   }, [refreshUserCallback]);
@@ -261,7 +275,6 @@ export const IdeaProvider = ({ children }) => {
       await loadIdeas();
       return res.data.data.idea;
     } catch (error) {
-      console.error('Error editing idea:', error);
       throw error;
     }
   }, [loadIdeas]);
@@ -284,7 +297,7 @@ export const IdeaProvider = ({ children }) => {
         throw new Error(response.data.message || 'Failed to delete idea');
       }
     } catch (error) {
-      console.error('Error deleting idea:', error);
+
       throw error;
     }
   }, [state.ideas, refreshUserCallback]);

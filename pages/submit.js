@@ -79,14 +79,9 @@ export default function SubmitIdeaScreen() {
   const [formData, setFormData] = useState(initialFormData);
 
   const resetForm = useCallback(() => {
-    console.log('Resetting form...');
     setFormData(initialFormData);
     setCurrentStep(0);
     setResetCounter(prev => prev + 1);
-    
-    console.log('Form reset complete. New formData:', initialFormData);
-    console.log('Current step reset to:', 0);
-    console.log('Reset counter incremented');
   }, [initialFormData]);
 
   // Reset form when component mounts or user changes
@@ -98,17 +93,10 @@ export default function SubmitIdeaScreen() {
 
   // Monitor form data changes for debugging - only in development
   useEffect(() => {
-    if (__DEV__) {
-      console.log('Form data changed:', formData);
-    }
   }, [formData]);
 
   // Monitor current step changes for debugging - only in development
   useEffect(() => {
-    if (__DEV__) {
-      console.log('Current step changed to:', currentStep);
-    }
-
     const isNavigatingForward = currentStep > prevStepRef.current;
     prevStepRef.current = currentStep;
 
@@ -228,7 +216,6 @@ export default function SubmitIdeaScreen() {
                     }];
                     updateFormData('images', newImages);
                   } catch (e) {
-                    console.error('Image processing error:', e);
                     Alert.alert('Error', 'Failed to process image. Please try again.');
                   }
                 }
@@ -260,7 +247,6 @@ export default function SubmitIdeaScreen() {
                     }];
                     updateFormData('images', newImages);
                   } catch (e) {
-                    console.error('Image processing error:', e);
                     Alert.alert('Error', 'Failed to process image. Please try again.');
                   }
                 }
@@ -276,7 +262,6 @@ export default function SubmitIdeaScreen() {
         ]
       );
     } catch (error) {
-      console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to pick image. Please try again.');
     }
   };
@@ -292,7 +277,6 @@ export default function SubmitIdeaScreen() {
     
     for (let i = 0; i <= retries; i++) {
       try {
-        console.log(`Attempt ${i + 1} to ${url}`);
         const response = await fetch(url, {
           method: 'POST',
           headers: {
@@ -303,8 +287,6 @@ export default function SubmitIdeaScreen() {
           },
           body: form,
         });
-
-        console.log('Response status:', response.status);
         
         if (response.ok) {
           return response;
@@ -314,9 +296,9 @@ export default function SubmitIdeaScreen() {
         let errorData;
         try {
           errorData = await response.json();
-          console.error('Server error response:', errorData);
+
         } catch (e) {
-          console.error('Failed to parse error response:', e);
+
           const text = await response.text();
           errorData = { message: text };
         }
@@ -324,7 +306,7 @@ export default function SubmitIdeaScreen() {
         lastError = new Error(errorData.message || `HTTP error! status: ${response.status}`);
         
       } catch (error) {
-        console.error(`Request failed:`, error);
+
         lastError = error;
         
         // If this was the last retry, rethrow the error
@@ -342,12 +324,12 @@ export default function SubmitIdeaScreen() {
 
   const handleSubmit = async () => {
     setLoading(true);
-    console.log('Starting form submission...');
+
     
     try {
       // 1. Build FormData
       const form = new FormData();
-      console.log('FormData created');
+
       
       // Add text fields
       form.append('title', formData.title);
@@ -365,7 +347,7 @@ export default function SubmitIdeaScreen() {
       }
       
       // Simple image handling without compression
-      console.log('Adding images to form:', formData.images.length);
+
       
       for (const img of formData.images) {
         const file = {
@@ -373,7 +355,7 @@ export default function SubmitIdeaScreen() {
           name: `image_${Date.now()}.jpg`,
           type: 'image/jpeg'
         };
-        console.log('Adding image file:', file);
+
         form.append('images', file);
       }
       
@@ -382,12 +364,12 @@ export default function SubmitIdeaScreen() {
       try {
         // Try to get token from AsyncStorage
         const storedToken = await AsyncStorage.getItem('token');
-        console.log('Stored token:', storedToken ? 'Token found' : 'No token found');
+
         
         if (!storedToken) {
           // If no token in AsyncStorage, check if we have a user context with token
           if (user?.token) {
-            console.log('Using token from user context');
+
             token = user.token;
           } else {
             throw new Error('No authentication token found. Please log in again.');
@@ -396,7 +378,7 @@ export default function SubmitIdeaScreen() {
           token = storedToken;
         }
       } catch (error) {
-        console.error('Error getting token:', error);
+
         Alert.alert('Authentication Error', error.message || 'Please log in again.');
         navigation.navigate('Login');
         throw error;
@@ -409,12 +391,12 @@ export default function SubmitIdeaScreen() {
       // Try each base URL until one works or all fail
       for (const url of baseURLs) {
         const apiUrl = `${url}/app/api/ideas`;
-        console.log('Trying API URL:', apiUrl);
+
         try {
           // 3. Make the request with retries
           const response = await makeApiRequest(apiUrl, form, token);
           const result = await response.json();
-          console.log('Idea submitted successfully:', result);
+
 
           // Refresh the ideas list
           await loadIdeas();
@@ -439,17 +421,17 @@ export default function SubmitIdeaScreen() {
           );
           return; // stop after first success
         } catch (error) {
-          console.error(`Request to ${apiUrl} failed:`, error);
+
           lastError = error; // keep last error and try next url
         }
       }
         
       
       // If we get here, all URLs failed
-      console.error('All API endpoints failed');
+
       throw lastError || new Error('Failed to connect to the server. Please check your internet connection and try again.');
     } catch (error) {
-      console.error('Submit error:', error);
+
       Alert.alert('Error', 'Failed to submit idea. Please check your input and try again.');
     } finally {
       setLoading(false);

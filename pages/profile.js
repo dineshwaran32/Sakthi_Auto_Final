@@ -40,17 +40,7 @@ export default function ProfileScreen() {
   const implementedPoints = implementedIdeas.length * 30;
   const totalCalculatedPoints = submittedPoints + approvedPoints + implementedPoints;
   
-  // Debug points calculation
-  console.log('=== POINTS DEBUG ===');
-  console.log('User stored credit points:', user.creditPoints);
-  console.log('User ideas:', userIdeas.length, userIdeas.map(i => ({ title: i.title, status: i.status })));
-  console.log('Approved ideas:', approvedIdeas.length);
-  console.log('Implemented ideas:', implementedIdeas.length);
-  console.log('Calculated points breakdown:', { submittedPoints, approvedPoints, implementedPoints, totalCalculatedPoints });
-  console.log('Points match:', user.creditPoints === totalCalculatedPoints);
-  console.log('=== END POINTS DEBUG ===');
-  
-  // Use calculated points if they differ significantly from stored points
+  // Use calculated points for display
   const displayPoints = totalCalculatedPoints;
   
   const handleLogout = async () => {
@@ -61,8 +51,7 @@ export default function ProfileScreen() {
         routes: [{ name: 'Login' }],
       });
     } catch (error) {
-      // Only log to console, do not show any error UI
-      console.error('Logout error:', error);
+      // Handle logout error silently
     }
   };
 
@@ -71,9 +60,7 @@ export default function ProfileScreen() {
       await refreshUser();
       Alert.alert('Success', 'Profile data refreshed successfully!');
     } catch (error) {
-      // Only show Alert, do not show any error UI
       Alert.alert('Error', 'Failed to refresh profile data. Please try again.');
-      console.error('Profile refresh error:', error);
     }
   };
 

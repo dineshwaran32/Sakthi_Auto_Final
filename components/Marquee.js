@@ -50,16 +50,8 @@ const Marquee = () => {
   }, [marqueeText, textWidth]);
 
   useEffect(() => {
-    console.log('=== MARQUEE DEBUG START ===');
-    console.log('Total ideas:', ideas.length);
-    console.log('All ideas statuses:', ideas.map(i => ({ title: i.title, status: i.status })));
-    
     const recentImplementedIdeas = ideas
-      .filter(idea => {
-        const isImplemented = idea.status === 'implemented' || idea.status === 'implementing';
-        console.log(`Idea "${idea.title}" - Status: ${idea.status} - Included: ${isImplemented}`);
-        return isImplemented;
-      })
+      .filter(idea => idea.status === 'implemented' || idea.status === 'implementing')
       .sort((a, b) => {
         // Sort by updatedAt for implemented ideas, fallback to createdAt
         const dateA = new Date(a.updatedAt || a.createdAt);
@@ -68,39 +60,26 @@ const Marquee = () => {
       })
       .slice(0, 3); // Show only 3 most recent
 
-    console.log('Filtered implemented ideas count:', recentImplementedIdeas.length);
-    console.log('Filtered ideas:', recentImplementedIdeas.map(i => ({ title: i.title, status: i.status, updatedAt: i.updatedAt, createdAt: i.createdAt })));
-
     if (recentImplementedIdeas.length > 0) {
-      const formattedIdeas = recentImplementedIdeas.map((idea, index) => {
+      const formattedIdeas = recentImplementedIdeas.map((idea) => {
         const emoji = idea.status === 'implemented' ? '✅' : '🔄';
         const date = idea.updatedAt ? new Date(idea.updatedAt).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric'
         }) : '';
         const submitter = idea.submittedBy?.name || user?.name || 'Team Member';
-        const formatted = `${emoji} ${idea.title} (by ${submitter}) ${date}`;
-        console.log(`Formatted idea ${index + 1}:`, formatted);
-        return formatted;
+        return `${emoji} ${idea.title} (by ${submitter}) ${date}`;
       });
-
-      console.log('All formatted ideas:', formattedIdeas);
       
       const header = '🎉 Latest Updates: ';
-      const separator = '   •••••   '; // Clear separator for better readability
+      const separator = '   •••••   ';
       let text = header + formattedIdeas.join(separator);
-      
-      console.log('Text before repetition:', text);
       
       // Always repeat the text to ensure smooth scrolling and full visibility
       text = text + separator + text;
       
-      console.log('Final marquee text length:', text.length);
-      console.log('Final marquee text:', text);
-      console.log('=== MARQUEE DEBUG END ===');
       setMarqueeText(text);
     } else {
-      console.log('No implemented ideas found, using fallback');
       const fallback = '✨ No recently implemented ideas yet. Be the first to contribute! ';
       setMarqueeText(fallback + fallback);
     }
@@ -114,16 +93,7 @@ const Marquee = () => {
     }
 
     // Use a much more generous fallback calculation for text width
-    const effectiveTextWidth = textWidth > 0 ? textWidth * 2 : marqueeText.length * 30; // Double all width calculations
-    
-    console.log('Animation params:', {
-      marqueeText: marqueeText.substring(0, 80) + '...',
-      textWidth,
-      effectiveTextWidth,
-      containerWidth,
-      startPosition: containerWidth + 50,
-      endPosition: -effectiveTextWidth - 150
-    });
+    const effectiveTextWidth = textWidth > 0 ? textWidth * 2 : marqueeText.length * 30;
     
     // Calculate duration based on total distance to travel
     const totalDistance = containerWidth + 100 + effectiveTextWidth + 300; // Double the distances
@@ -200,7 +170,6 @@ const Marquee = () => {
           ]}
           onLayout={(event) => {
             const { width } = event.nativeEvent.layout;
-            console.log('Text width measured:', width, 'for text:', marqueeText.substring(0, 90) + '...');
             setTextWidth(width);
           }}
         >
