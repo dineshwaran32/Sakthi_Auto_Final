@@ -184,11 +184,6 @@ export default function ProfileScreen() {
               <Text variant="displayMedium" style={{ fontWeight: 'bold', color: theme.colors.secondary, marginTop: spacing.md }}>
                 {displayPoints}
               </Text>
-              {user.creditPoints !== totalCalculatedPoints && (
-                <Text variant="bodySmall" style={{ color: theme.colors.error, marginTop: spacing.xs }}>
-                  (Database: {user.creditPoints ?? 0})
-                </Text>
-              )}
               <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: spacing.xs }}>
                 Total Credit Points
               </Text>
