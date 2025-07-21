@@ -6,9 +6,9 @@ export const NETWORK_CONFIG = {
   development: {
     // Try these fallback URLs in order
     baseURLs: [
-      'http://10.35.187.142:3000',  // Your computer's local IP
-      'http://10.35.187.142:3000',  // Duplicated for retry reliability
-      'http://10.0.2.2:3000',       // Android Emulator localhost
+      'http://10.232.76.142:3000',  // Your computer's local IP
+      'http://10.232.76.142:3000',  // Duplicated for retry reliability
+      'http://10.232.76.142:3000',       // Android Emulator localhost
     ],
     timeout: 30000,  // 30 seconds timeout
     retryAttempts: 3,  // Increased retry attempts
@@ -18,7 +18,7 @@ export const NETWORK_CONFIG = {
   
   // Production environment
   production: {
-    baseURLs: ['http://10.35.187.142:3000'],
+    baseURLs: ['http://10.232.76.142:3000'],
     timeout: 30000,
     retryAttempts: 3,
     retryDelay: 2000,

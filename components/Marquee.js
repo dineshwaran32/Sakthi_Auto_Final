@@ -21,7 +21,7 @@ const Marquee = () => {
   const { user } = useUser();
   const [marqueeText, setMarqueeText] = useState('');
   const [textWidth, setTextWidth] = useState(0);
-  const containerWidth = width - 32; // Account for horizontal margins
+  const containerWidth = width; // Use full width for maximum space
   const animatedValue = useRef(new Animated.Value(0)).current;
   const animation = useRef(null);
 
@@ -34,12 +34,10 @@ const Marquee = () => {
     const subscription = AppState.addEventListener('change', nextAppState => {
       appState.current = nextAppState;
       setAppStateVisible(nextAppState);
-      
+
       if (nextAppState === 'active') {
-        // Restart animation when app comes to foreground
         startAnimation();
       } else if (nextAppState === 'background') {
-        // Clean up animation when app goes to background
         if (animation.current) {
           animation.current.stop();
         }
@@ -52,93 +50,112 @@ const Marquee = () => {
   }, [marqueeText, textWidth]);
 
   useEffect(() => {
-    // Filter and sort implemented ideas by creation date (newest first)
+    console.log('=== MARQUEE DEBUG START ===');
+    console.log('Total ideas:', ideas.length);
+    console.log('All ideas statuses:', ideas.map(i => ({ title: i.title, status: i.status })));
+    
     const recentImplementedIdeas = ideas
-      .filter(idea => idea.status === 'implemented' || idea.status === 'implementing')
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 5); // Show only the 5 most recent
+      .filter(idea => {
+        const isImplemented = idea.status === 'implemented' || idea.status === 'implementing';
+        console.log(`Idea "${idea.title}" - Status: ${idea.status} - Included: ${isImplemented}`);
+        return isImplemented;
+      })
+      .sort((a, b) => {
+        // Sort by updatedAt for implemented ideas, fallback to createdAt
+        const dateA = new Date(a.updatedAt || a.createdAt);
+        const dateB = new Date(b.updatedAt || b.createdAt);
+        return dateB - dateA;
+      })
+      .slice(0, 3); // Show only 3 most recent
+
+    console.log('Filtered implemented ideas count:', recentImplementedIdeas.length);
+    console.log('Filtered ideas:', recentImplementedIdeas.map(i => ({ title: i.title, status: i.status, updatedAt: i.updatedAt, createdAt: i.createdAt })));
 
     if (recentImplementedIdeas.length > 0) {
-      // Format the text with emojis and styling
-      const formattedIdeas = recentImplementedIdeas.map(idea => {
+      const formattedIdeas = recentImplementedIdeas.map((idea, index) => {
         const emoji = idea.status === 'implemented' ? '✅' : '🔄';
-        const date = idea.updatedAt ? new Date(idea.updatedAt).toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short', 
-          day: 'numeric' 
+        const date = idea.updatedAt ? new Date(idea.updatedAt).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric'
         }) : '';
-        return `${emoji} ${idea.title} (${idea.submittedBy?.name || user?.name || 'Team Member'}) ${date}`;
+        const submitter = idea.submittedBy?.name || user?.name || 'Team Member';
+        const formatted = `${emoji} ${idea.title} (by ${submitter}) ${date}`;
+        console.log(`Formatted idea ${index + 1}:`, formatted);
+        return formatted;
       });
+
+      console.log('All formatted ideas:', formattedIdeas);
       
-      // Add a header and join all ideas with more spacing
-      const header = '✨ Recently Implemented: ';
-      const separator = '   •••••   ';
+      const header = '🎉 Latest Updates: ';
+      const separator = '   •••••   '; // Clear separator for better readability
       let text = header + formattedIdeas.join(separator);
       
-      // Repeat the content to ensure it's long enough
-      text = text + separator + text; // Repeat once to make it longer
+      console.log('Text before repetition:', text);
+      
+      // Always repeat the text to ensure smooth scrolling and full visibility
+      text = text + separator + text;
+      
+      console.log('Final marquee text length:', text.length);
+      console.log('Final marquee text:', text);
+      console.log('=== MARQUEE DEBUG END ===');
       setMarqueeText(text);
     } else {
-      // Make the fallback message longer by repeating it
+      console.log('No implemented ideas found, using fallback');
       const fallback = '✨ No recently implemented ideas yet. Be the first to contribute! ';
       setMarqueeText(fallback + fallback);
     }
-  }, [ideas]);
+  }, [ideas, user]);
 
   const startAnimation = useCallback(() => {
-    if (!marqueeText || textWidth <= 0) return;
+    if (!marqueeText) return;
 
-    // Stop any existing animation
     if (animation.current) {
       animation.current.stop();
     }
 
-    // Calculate duration based on text width and container width
-    const baseDuration = 20000; // Increased base duration for slower scrolling
-    const speedFactor = 30; // Reduced speed factor for slower movement
-    const duration = Math.max(baseDuration, (textWidth / speedFactor) * 1000);
+    // Use a much more generous fallback calculation for text width
+    const effectiveTextWidth = textWidth > 0 ? textWidth * 2 : marqueeText.length * 30; // Double all width calculations
+    
+    console.log('Animation params:', {
+      marqueeText: marqueeText.substring(0, 80) + '...',
+      textWidth,
+      effectiveTextWidth,
+      containerWidth,
+      startPosition: containerWidth + 50,
+      endPosition: -effectiveTextWidth - 150
+    });
+    
+    // Calculate duration based on total distance to travel
+    const totalDistance = containerWidth + 100 + effectiveTextWidth + 300; // Double the distances
+    const pixelsPerSecond = 50; // Slower speed for readability
+    const duration = Math.max(30000, (totalDistance / pixelsPerSecond) * 1000);
 
-    // Reset position to right side
-    animatedValue.setValue(containerWidth);
-
-    // Create a single animation sequence
     const animate = () => {
-      // Reset position to right side
-      animatedValue.setValue(containerWidth);
-      
-      // Start the animation
-      Animated.timing(animatedValue, {
-        toValue: -textWidth,
+      // Start from well beyond the right edge
+      animatedValue.setValue(containerWidth + 50);
+
+      animation.current = Animated.timing(animatedValue, {
+        toValue: -effectiveTextWidth - 300, // Double the end position for complete scrolling
         duration: duration,
         useNativeDriver: true,
-        useNativeDriver: true,
-      }).start(({ finished }) => {
+      });
+
+      animation.current.start(({ finished }) => {
         if (finished) {
-          // When animation completes, start it again
-          requestAnimationFrame(animate);
+          // Add a pause before restarting
+          setTimeout(() => {
+            requestAnimationFrame(animate);
+          }, 1500);
         }
       });
     };
 
-    // Start the animation loop
-    animation.current = {
-      stop: () => animatedValue.stopAnimation()
-    };
-    
-    // Initial delay before starting
+    // Start animation after a brief delay
     setTimeout(() => {
       animate();
-    }, 100);
+    }, 300);
   }, [marqueeText, textWidth, containerWidth]);
 
-  // Handle animation when text or dimensions change
-  useEffect(() => {
-    if (isFocused && marqueeText && textWidth > 0) {
-      startAnimation();
-    }
-  }, [marqueeText, textWidth, isFocused, startAnimation]);
-
-  // Handle focus/blur events for navigation
   useEffect(() => {
     if (isFocused && marqueeText && textWidth > 0) {
       startAnimation();
@@ -147,34 +164,43 @@ const Marquee = () => {
     }
   }, [isFocused, marqueeText, textWidth, startAnimation]);
 
-  // Don't show anything if there's no marquee text
   if (!marqueeText) return null;
 
   return (
     <View style={styles.container}>
       <View style={styles.marqueeContainer}>
-        <Animated.Text 
+        <Animated.Text
           style={[
             styles.marqueeText,
             {
               transform: [{ translateX: animatedValue }],
-              width: 'auto',
-              paddingLeft: 16, // Add padding to ensure text appears from the right edge
+              width: textWidth > 0 ? (textWidth + 200) * 2 : marqueeText.length * 40 + 800, // Double the width calculations
+              position: 'absolute', // Absolute positioning to avoid container constraints
+              top: 0,
+              left: 0,
             }
           ]}
           numberOfLines={1}
-          onLayout={(event) => {
-            const { width } = event.nativeEvent.layout;
-            setTextWidth(width);
-          }}
+          ellipsizeMode="clip"
         >
           {marqueeText}
         </Animated.Text>
-        {/* Invisible text to measure the actual width */}
-        <Text 
-          style={[styles.marqueeText, { opacity: 0, position: 'absolute' }]}
+        {/* Hidden text for accurate width measurement */}
+        <Text
+          style={[
+            styles.marqueeText,
+            {
+              opacity: 0,
+              position: 'absolute',
+              top: -2000, // Move far off screen
+              left: -2000, // Also move horizontally off screen
+              paddingHorizontal: 16, // Match the visible text padding for accurate measurement
+              maxWidth: 'none', // Allow unlimited width for measurement
+            }
+          ]}
           onLayout={(event) => {
             const { width } = event.nativeEvent.layout;
+            console.log('Text width measured:', width, 'for text:', marqueeText.substring(0, 90) + '...');
             setTextWidth(width);
           }}
         >
@@ -189,38 +215,34 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.primary,
     paddingVertical: 8,
-    marginLeft: 0,
-    marginRight: 0,
-    marginHorizontal: 0,
-    borderRadius: 8, // Match profile card's border radius
-    borderTopLeftRadius: 8, // Match profile card's top corners
-    borderTopRightRadius: 8, // Match profile card's top corners
-    borderBottomLeftRadius: 8, // Match profile card's bottom corners
-    borderBottomRightRadius: 8, // Match profile card's bottom corners
+    borderRadius: 8,
     overflow: 'hidden',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
-    // Match the exact width of the screen minus the ScrollView's padding
-    width: Dimensions.get('window').width - (spacing.md * 2), // Account for ScrollView padding
-    alignSelf: 'center', // Center the marquee within the ScrollView
-    marginTop: 8, // Add a small gap between profile card and marquee
-    marginBottom: 4, // Add some bottom margin for better spacing
+    width: Dimensions.get('window').width - 8, // Minimal margins for maximum space
+    alignSelf: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+    marginHorizontal: 4, // Small horizontal margins
   },
   marqueeContainer: {
     overflow: 'hidden',
     width: '100%',
+    height: 30, // Fixed height to contain the text
+    position: 'relative', // Relative positioning for absolute children
   },
   marqueeText: {
     color: colors.onPrimary,
     fontSize: 14,
-    whiteSpace: 'nowrap',
     fontWeight: '500',
-    paddingHorizontal: 20, // Increased padding for better spacing
-    lineHeight: 22, // Better line height for readability
-    letterSpacing: 0.3, // Slightly increased letter spacing for better readability
+    lineHeight: 22,
+    letterSpacing: 0.3,
+    paddingHorizontal: 16, // Consistent padding
+    flexShrink: 0, // Prevent text from shrinking
+    flexWrap: 'nowrap', // Prevent text wrapping
   },
 });
 

@@ -40,6 +40,19 @@ export default function ProfileScreen() {
   const implementedPoints = implementedIdeas.length * 30;
   const totalCalculatedPoints = submittedPoints + approvedPoints + implementedPoints;
   
+  // Debug points calculation
+  console.log('=== POINTS DEBUG ===');
+  console.log('User stored credit points:', user.creditPoints);
+  console.log('User ideas:', userIdeas.length, userIdeas.map(i => ({ title: i.title, status: i.status })));
+  console.log('Approved ideas:', approvedIdeas.length);
+  console.log('Implemented ideas:', implementedIdeas.length);
+  console.log('Calculated points breakdown:', { submittedPoints, approvedPoints, implementedPoints, totalCalculatedPoints });
+  console.log('Points match:', user.creditPoints === totalCalculatedPoints);
+  console.log('=== END POINTS DEBUG ===');
+  
+  // Use calculated points if they differ significantly from stored points
+  const displayPoints = totalCalculatedPoints;
+  
   const handleLogout = async () => {
     try {
       await logout();
@@ -169,8 +182,13 @@ export default function ProfileScreen() {
                 <MaterialIcons name="stars" size={32} color={theme.colors.secondary} />
               </Surface>
               <Text variant="displayMedium" style={{ fontWeight: 'bold', color: theme.colors.secondary, marginTop: spacing.md }}>
-                {user.creditPoints ?? 0}
+                {displayPoints}
               </Text>
+              {user.creditPoints !== totalCalculatedPoints && (
+                <Text variant="bodySmall" style={{ color: theme.colors.error, marginTop: spacing.xs }}>
+                  (Database: {user.creditPoints ?? 0})
+                </Text>
+              )}
               <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: spacing.xs }}>
                 Total Credit Points
               </Text>
