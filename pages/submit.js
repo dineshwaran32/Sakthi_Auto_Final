@@ -19,6 +19,7 @@ import {
   RadioButton,
   Chip,
   Surface,
+  Checkbox,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -69,7 +70,7 @@ export default function SubmitIdeaScreen() {
     title: '',
     problem: '',
     improvement: '',
-    benefit: '',
+    benefits: [],
     estimatedSavings: '',
     images: [],
     department: user?.department || '',
@@ -150,8 +151,8 @@ export default function SubmitIdeaScreen() {
         }
         return true;
       case 2:
-        if (!formData.benefit) {
-          Alert.alert('Validation Error', 'Please select an expected benefit');
+        if (!formData.benefits || formData.benefits.length === 0) {
+          Alert.alert('Validation Error', 'Please select at least one expected benefit');
           return false;
         }
         return true;
@@ -303,10 +304,16 @@ export default function SubmitIdeaScreen() {
           errorData = { message: text };
         }
         
+        console.error('SubmitIdea makeApiRequest: Non-OK response', {
+          url,
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+        });
         lastError = new Error(errorData.message || `HTTP error! status: ${response.status}`);
         
       } catch (error) {
-
+        console.error('SubmitIdea makeApiRequest: Network/Fetch error', { url, error });
         lastError = error;
         
         // If this was the last retry, rethrow the error
@@ -335,8 +342,8 @@ export default function SubmitIdeaScreen() {
       form.append('title', formData.title);
       form.append('problem', formData.problem);
       form.append('improvement', formData.improvement);
-      form.append('benefit', formData.benefit);
-      form.append('department', formData.department);
+      form.append('benefit', Array.isArray(formData.benefits) ? formData.benefits.join(',') : '');
+      // form.append('department', formData.department);
       
       // Add estimated savings if provided
       if (formData.estimatedSavings && formData.estimatedSavings.trim() !== '') {
@@ -396,6 +403,7 @@ export default function SubmitIdeaScreen() {
           // 3. Make the request with retries
           const response = await makeApiRequest(apiUrl, form, token);
           const result = await response.json();
+          console.log('SubmitIdea: submission success', { apiUrl, result });
 
 
           // Refresh the ideas list
@@ -421,7 +429,7 @@ export default function SubmitIdeaScreen() {
           );
           return; // stop after first success
         } catch (error) {
-
+          console.error('SubmitIdea: attempt failed for URL', { apiUrl, error });
           lastError = error; // keep last error and try next url
         }
       }
@@ -431,8 +439,8 @@ export default function SubmitIdeaScreen() {
 
       throw lastError || new Error('Failed to connect to the server. Please check your internet connection and try again.');
     } catch (error) {
-
-      Alert.alert('Error', 'Failed to submit idea. Please check your input and try again.');
+      console.error('SubmitIdea: final submission error', { error });
+      Alert.alert('Error', error?.message ? String(error.message) : 'Failed to submit idea. Please check your input and try again.');
     } finally {
       setLoading(false);
     }
@@ -455,6 +463,7 @@ export default function SubmitIdeaScreen() {
               style={styles.input}
               placeholder="Enter a clear, descriptive title"
             />
+            {/*
             <TextInput
               key={`department-${resetCounter}`}
               label="Department"
@@ -463,6 +472,7 @@ export default function SubmitIdeaScreen() {
               style={styles.input}
               disabled
             />
+            */}
           </View>
         );
 
@@ -504,22 +514,28 @@ export default function SubmitIdeaScreen() {
               Expected Benefits
             </Text>
             <Text variant="bodyMedium" style={styles.sectionSubtitle}>
-              Select the primary benefit category:
+              Select one or more benefit categories:
             </Text>
-            <RadioButton.Group
-              key={`benefit-${resetCounter}`}
-              onValueChange={(value) => updateFormData('benefit', value)}
-              value={formData.benefit}
-            >
-              {BENEFIT_OPTIONS.map((option) => (
+            {BENEFIT_OPTIONS.map((option) => {
+              const checked = Array.isArray(formData.benefits) && formData.benefits.includes(option.value);
+              return (
                 <View key={option.value} style={styles.radioOption}>
-                  <RadioButton value={option.value} />
+                  <Checkbox
+                    status={checked ? 'checked' : 'unchecked'}
+                    onPress={() => {
+                      const current = Array.isArray(formData.benefits) ? formData.benefits : [];
+                      const next = checked
+                        ? current.filter(v => v !== option.value)
+                        : [...current, option.value];
+                      updateFormData('benefits', next);
+                    }}
+                  />
                   <Text variant="bodyLarge" style={styles.radioLabel}>
                     {option.label}
                   </Text>
                 </View>
-              ))}
-            </RadioButton.Group>
+              );
+            })}
             
             <TextInput
               key={`savings-${resetCounter}`}
@@ -613,11 +629,15 @@ export default function SubmitIdeaScreen() {
                 
                 <View style={styles.reviewSection}>
                   <Text variant="labelLarge" style={styles.reviewLabel}>
-                    Benefit Category:
+                    Benefit Categories:
                   </Text>
-                  <Chip mode="outlined" style={styles.benefitChip}>
-                    {BENEFIT_OPTIONS.find(opt => opt.value === formData.benefit)?.label}
-                  </Chip>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                    {(formData.benefits || []).map((b) => (
+                      <Chip key={b} mode="outlined" style={styles.benefitChip}>
+                        {BENEFIT_OPTIONS.find(opt => opt.value === b)?.label || b}
+                      </Chip>
+                    ))}
+                  </View>
                 </View>
                 
                 {formData.estimatedSavings && (
