@@ -6,9 +6,9 @@ export const NETWORK_CONFIG = {
   development: {
     // Try these fallback URLs in order
     baseURLs: [
-      'http://10.185.169.152:80',  // Your computer's local IP
-      'http://10.185.169.152:80',  // Duplicated for retry reliability
-      'http://10.185.169.152:80',       // Android Emulator localhost
+      'http://118.91.235.74:80',  // Your computer's local IP
+      'http://118.91.235.74:80',  // Duplicated for retry reliability
+      'http://118.91.235.74:80',       // Android Emulator localhost
     ],
     timeout: 30000,  // 30 seconds timeout
     retryAttempts: 3,  // Increased retry attempts
@@ -18,7 +18,7 @@ export const NETWORK_CONFIG = {
   
   // Production environment
   production: {
-    baseURLs: ['http://10.185.169.152:80'],
+    baseURLs: ['http://118.91.235.74:80'],
     timeout: 30000,
     retryAttempts: 3,
     retryDelay: 2000,
@@ -64,7 +64,7 @@ export const PLATFORM_NETWORK_CONFIG = {
     networkSecurityConfig: {
       domainConfig: [
         {
-          domain: '10.185.169.152',
+          domain: '118.91.235.74',
           cleartextTrafficPermitted: true,
         }
       ]
@@ -73,7 +73,7 @@ export const PLATFORM_NETWORK_CONFIG = {
   ios: {
     allowsArbitraryLoads: true,
     exceptionDomains: {
-      '10.185.169.152': {
+      '118.91.235.74': {
         allowsInsecureHTTPLoads: true,
         minimumTLSVersion: '1.0',
         requiresForwardSecrecy: false
