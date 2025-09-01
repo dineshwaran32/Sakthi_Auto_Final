@@ -115,7 +115,7 @@ export default function LoginScreen() {
         Alert.alert('Error', response.data.message || 'Failed to send OTP');
       }
     } catch (error) {
-      console.error('Send OTP Error:', error);
+      // console.error('Send OTP Error:', error);
       
       // Handle specific error types
       if (error.message && error.message.includes('Network error')) {
@@ -156,7 +156,7 @@ export default function LoginScreen() {
         setOtp('');
       }
     } catch (error) {
-      console.error('Verify OTP Error:', error);
+      // console.error('Verify OTP Error:', error);
       
       // Handle specific error types
       if (error.message && error.message.includes('Network error')) {

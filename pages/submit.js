@@ -48,6 +48,7 @@ const BENEFIT_OPTIONS = [
   { value: 'safety', label: 'Safety' },
   { value: 'quality', label: 'Quality' },
   { value: 'productivity', label: 'Productivity' },
+  { value: 'others', label: 'Others' },
 ];
 
 export default function SubmitIdeaScreen() {
@@ -71,6 +72,7 @@ export default function SubmitIdeaScreen() {
     problem: '',
     improvement: '',
     benefits: [],
+    othersDescription: '',
     estimatedSavings: '',
     images: [],
     department: user?.department || '',
@@ -153,6 +155,11 @@ export default function SubmitIdeaScreen() {
       case 2:
         if (!formData.benefits || formData.benefits.length === 0) {
           Alert.alert('Validation Error', 'Please select at least one expected benefit');
+          return false;
+        }
+        // Check if "Others" is selected but description is missing
+        if (formData.benefits.includes('others') && !formData.othersDescription.trim()) {
+          Alert.alert('Validation Error', 'Please describe the benefits when selecting "Others" option');
           return false;
         }
         return true;
@@ -304,16 +311,16 @@ export default function SubmitIdeaScreen() {
           errorData = { message: text };
         }
         
-        console.error('SubmitIdea makeApiRequest: Non-OK response', {
-          url,
-          status: response.status,
-          statusText: response.statusText,
-          errorData,
-        });
+        // console.error('SubmitIdea makeApiRequest: Non-OK response', {
+        //   url,
+        //   status: response.status,
+        //   statusText: response.statusText,
+        //   errorData,
+        // });
         lastError = new Error(errorData.message || `HTTP error! status: ${response.status}`);
         
       } catch (error) {
-        console.error('SubmitIdea makeApiRequest: Network/Fetch error', { url, error });
+        // console.error('SubmitIdea makeApiRequest: Network/Fetch error', { url, error });
         lastError = error;
         
         // If this was the last retry, rethrow the error
@@ -343,6 +350,12 @@ export default function SubmitIdeaScreen() {
       form.append('problem', formData.problem);
       form.append('improvement', formData.improvement);
       form.append('benefit', Array.isArray(formData.benefits) ? formData.benefits.join(',') : '');
+      
+      // Add others description if "others" is selected
+      if (formData.benefits.includes('others') && formData.othersDescription.trim()) {
+        form.append('othersDescription', formData.othersDescription.trim());
+      }
+      
       // form.append('department', formData.department);
       
       // Add estimated savings if provided
@@ -403,7 +416,7 @@ export default function SubmitIdeaScreen() {
           // 3. Make the request with retries
           const response = await makeApiRequest(apiUrl, form, token);
           const result = await response.json();
-          console.log('SubmitIdea: submission success', { apiUrl, result });
+          // console.log('SubmitIdea: submission success', { apiUrl, result });
 
 
           // Refresh the ideas list
@@ -429,7 +442,7 @@ export default function SubmitIdeaScreen() {
           );
           return; // stop after first success
         } catch (error) {
-          console.error('SubmitIdea: attempt failed for URL', { apiUrl, error });
+          // console.error('SubmitIdea: attempt failed for URL', { apiUrl, error });
           lastError = error; // keep last error and try next url
         }
       }
@@ -439,7 +452,7 @@ export default function SubmitIdeaScreen() {
 
       throw lastError || new Error('Failed to connect to the server. Please check your internet connection and try again.');
     } catch (error) {
-      console.error('SubmitIdea: final submission error', { error });
+      // console.error('SubmitIdea: final submission error', { error });
       Alert.alert('Error', error?.message ? String(error.message) : 'Failed to submit idea. Please check your input and try again.');
     } finally {
       setLoading(false);
@@ -536,6 +549,22 @@ export default function SubmitIdeaScreen() {
                 </View>
               );
             })}
+            
+            {/* Others Description Input */}
+            {Array.isArray(formData.benefits) && formData.benefits.includes('others') && (
+              <View style={styles.othersContainer}>
+                <TextInput
+                  label="Describe the benefits (Required for Others option)"
+                  value={formData.othersDescription}
+                  onChangeText={(text) => updateFormData('othersDescription', text)}
+                  mode="outlined"
+                  multiline
+                  numberOfLines={3}
+                  style={styles.input}
+                  placeholder="Please describe the specific benefits of your idea..."
+                />
+              </View>
+            )}
             
             <TextInput
               key={`savings-${resetCounter}`}
@@ -639,6 +668,15 @@ export default function SubmitIdeaScreen() {
                     ))}
                   </View>
                 </View>
+                
+                {formData.benefits.includes('others') && formData.othersDescription && (
+                  <View style={styles.reviewSection}>
+                    <Text variant="labelLarge" style={styles.reviewLabel}>
+                      Others Description:
+                    </Text>
+                    <Text variant="bodyMedium">{formData.othersDescription}</Text>
+                  </View>
+                )}
                 
                 {formData.estimatedSavings && (
                   <View style={styles.reviewSection}>
@@ -802,6 +840,13 @@ const styles = StyleSheet.create({
   },
   radioLabel: {
     marginLeft: spacing.sm,
+  },
+  othersContainer: {
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    backgroundColor: theme.colors.surfaceVariant,
+    borderRadius: theme.roundness,
   },
   imageButton: {
     marginBottom: spacing.md,

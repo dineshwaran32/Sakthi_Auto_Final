@@ -173,7 +173,7 @@ export default function TrackerScreen({ route }) {
             mode="outlined" 
             style={styles.benefitChip}
           >
-            {item.benefit.replace('_', ' ').toUpperCase()}
+            {item.benefit === 'others' ? 'OTHERS' : item.benefit.replace('_', ' ').toUpperCase()}
           </Chip>
           
           {item.estimatedSavings && (

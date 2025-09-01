@@ -34,6 +34,7 @@ const IdeaDetailModal = ({ visible, idea, onDismiss }) => {
       case 'safety': return theme.colors.error;
       case 'quality': return theme.colors.tertiary;
       case 'productivity': return theme.colors.primary;
+      case 'others': return theme.colors.outline;
       default: return theme.colors.secondary;
     }
   };
@@ -159,8 +160,13 @@ const IdeaDetailModal = ({ visible, idea, onDismiss }) => {
                     ]}
                     textStyle={{ color: getBenefitColor(idea.benefit) }}
                   >
-                    {idea.benefit.replace('_', ' ').toUpperCase()}
+                    {idea.benefit === 'others' ? 'OTHERS' : idea.benefit.replace('_', ' ').toUpperCase()}
                   </Chip>
+                  {idea.benefit === 'others' && idea.othersDescription && (
+                    <Text variant="bodyMedium" style={[styles.sectionContent, { marginTop: 8 }]}>
+                      {idea.othersDescription}
+                    </Text>
+                  )}
                 </View>
 
                 {/* Images */}

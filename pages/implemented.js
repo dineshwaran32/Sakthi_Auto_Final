@@ -91,6 +91,7 @@ export default function ImplementedScreen() {
       case 'safety': return theme.colors.error;
       case 'quality': return theme.colors.tertiary;
       case 'productivity': return theme.colors.primary;
+      case 'others': return theme.colors.outline;
       default: return theme.colors.secondary;
     }
   };
@@ -164,7 +165,7 @@ export default function ImplementedScreen() {
               ]}
               textStyle={{ color: getBenefitColor(item.benefit) }}
             >
-              {item.benefit.replace('_', ' ').toUpperCase()}
+              {item.benefit === 'others' ? 'OTHERS' : item.benefit.replace('_', ' ').toUpperCase()}
             </Chip>
           </View>
           

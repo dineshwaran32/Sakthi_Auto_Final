@@ -14,19 +14,24 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease"
+        "buildType": "apk"
       }
     },
-    "production": {
+    "production-apk": {
       "autoIncrement": true,
       "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease"
+        "buildType": "apk"
+      }
+    },
+    "production-aab": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production-apk": {},
+    "production-aab": {}
   }
 }
